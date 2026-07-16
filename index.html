@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Mantenimiento Residencia</title>
     <!-- Iconos modernos (Lucide Icons) -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -10,34 +10,38 @@
 </head>
 <body>
 
-    <!-- CABECERA -->
-    <header class="main-header">
-        <div class="header-container">
-            <h1><i data-lucide="wrench"></i> MantResi <span>v1.0</span></h1>
-            <button id="btn-add-item" class="btn btn-primary">
-                <i data-lucide="plus"></i> Nuevo Equipo / Vehículo
+    <!-- CABECERA ESTILO APP NATIVA -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="brand">
+                <div class="brand-icon"><i data-lucide="wrench"></i></div>
+                <div>
+                    <h1>MantResi</h1>
+                    <span class="sub">Control de Flota y Equipos</span>
+                </div>
+            </div>
+            <button id="btn-add-item" class="btn-fab-header">
+                <i data-lucide="plus"></i>
             </button>
         </div>
     </header>
 
-    <main class="main-content">
+    <main class="app-container">
         
-        <!-- SECCIÓN DE AVISOS Y ALERTAS (ITV, Aceite, Revisiones vencidas) -->
-        <section class="alerts-section">
-            <h2 class="section-title"><i data-lucide="bell-ring" class="icon-alert"></i> Avisos Pendientes</h2>
-            <div id="alerts-container" class="alerts-grid">
-                <!-- Las tarjetas de alerta se generarán dinámicamente con JS aquí -->
-                <div class="no-alerts">
-                    <i data-lucide="shield-check"></i>
-                    <p>Todo al día. No hay alertas ni mantenimientos pendientes.</p>
-                </div>
+        <!-- ALERTAS CRÍTICAS (Estilo carrusel o lista compacta) -->
+        <section class="native-section">
+            <div class="section-header">
+                <h2><i data-lucide="bell" class="alert-bell-icon"></i> Avisos Importantes</h2>
+            </div>
+            <div id="alerts-container" class="alerts-native-list">
+                <!-- Se generan dinámicamente -->
             </div>
         </section>
 
-        <!-- SECCIÓN DE INVENTARIO -->
-        <section class="inventory-section">
-            <div class="inventory-header">
-                <h2 class="section-title"><i data-lucide="activity"></i> Estado de Flota y Maquinaria</h2>
+        <!-- INVENTARIO (FICHAS COMPACTAS) -->
+        <section class="native-section">
+            <div class="section-header-filters">
+                <h2>Equipos y Flota</h2>
                 <div class="filters">
                     <button class="filter-btn active" data-filter="all">Todos</button>
                     <button class="filter-btn" data-filter="vehiculo">Vehículos</button>
@@ -45,101 +49,138 @@
                 </div>
             </div>
 
-            <div id="inventory-grid" class="inventory-grid">
-                <!-- Las tarjetas de equipos se generarán dinámicamente aquí -->
+            <div id="inventory-grid" class="inventory-compact-grid">
+                <!-- Las fichas compactas se generarán aquí -->
             </div>
         </section>
 
     </main>
 
+    <!-- ==================== DETALLE DE FICHA A PANTALLA COMPLETA (Native Slide-Up) ==================== -->
+    <div id="modal-detail" class="modal-slide">
+        <div class="slide-panel">
+            <div class="drag-handle"></div>
+            <div class="slide-header">
+                <button class="btn-close-slide" id="close-detail-btn"><i data-lucide="chevron-down"></i> Volver</button>
+                <span class="status-indicator" id="detail-status-badge">Operativo</span>
+            </div>
+            
+            <div class="slide-body">
+                <div class="detail-main-info">
+                    <div class="detail-icon-box" id="detail-type-icon">
+                        <i data-lucide="car"></i>
+                    </div>
+                    <div>
+                        <span class="detail-category-tag" id="detail-type-text">Vehículo</span>
+                        <h2 id="detail-title">Nombre del Equipo</h2>
+                    </div>
+                </div>
+
+                <div class="detail-card-specs">
+                    <h3>Ficha de Mantenimiento</h3>
+                    <div id="detail-specs-list" class="native-spec-list">
+                        <!-- Campos personalizados -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="slide-footer">
+                <button class="btn btn-neutral flex-1" id="btn-edit-detail">
+                    <i data-lucide="edit-3"></i> Editar Ficha
+                </button>
+                <button class="btn btn-danger-outline" id="btn-delete-detail">
+                    <i data-lucide="trash-2"></i> Eliminar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- ==================== MODAL: FORMULARIO DINÁMICO (Añadir/Editar) ==================== -->
-    <div id="modal-form" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modal-title">Registrar Nuevo Equipo</h2>
-                <button class="close-modal-btn" id="close-form-btn">&times;</button>
+    <div id="modal-form" class="modal-slide">
+        <div class="slide-panel">
+            <div class="drag-handle"></div>
+            <div class="slide-header">
+                <button type="button" class="btn-close-slide" id="close-form-btn"><i data-lucide="x"></i> Cancelar</button>
+                <h2 id="modal-title" class="form-panel-title">Nuevo Equipo</h2>
             </div>
             
             <form id="equipment-form">
                 <input type="hidden" id="item-id">
                 
                 <div class="form-group">
-                    <label for="item-name">Nombre / Identificador *</label>
-                    <input type="text" id="item-name" placeholder="Ej. Furgoneta Peugeot o Cortasetos Stihl" required>
+                    <label>Nombre / Identificador *</label>
+                    <input type="text" id="item-name" placeholder="Ej. Furgoneta Peugeot" required>
                 </div>
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="item-type">Tipo *</label>
+                        <label>Tipo *</label>
                         <select id="item-type" required>
-                            <option value="vehiculo">Vehículo</option>
-                            <option value="maquina">Maquinaria / Herramienta</option>
+                            <option value="vehiculo">🚗 Vehículo</option>
+                            <option value="maquina">⚙️ Maquinaria / Herramienta</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="item-status">Estado inicial *</label>
+                        <label>Estado Inicial *</label>
                         <select id="item-status" required>
-                            <option value="ok">Operativo (OK)</option>
-                            <option value="revision">Requiere Revisión</option>
-                            <option value="taller">En Taller / No usar</option>
+                            <option value="ok">🟢 Operativo (OK)</option>
+                            <option value="revision">🟡 Requiere Revisión</option>
+                            <option value="taller">🔴 En Taller / No usar</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- SECCIÓN DINÁMICA: CAMPOS PERSONALIZABLES -->
                 <div class="custom-fields-section">
-                    <h3>Ficha Personalizada (Campos Flexibles)</h3>
-                    <p class="section-desc">Añade campos específicos según sea un vehículo (ITV, Aceite...) o una máquina (Hojas, bujías...).</p>
+                    <div class="custom-fields-header">
+                        <h3>Campos Personalizados</h3>
+                        <p>Añade ITV, Aceite, Presión, Cuchillas, etc.</p>
+                    </div>
                     
                     <div id="custom-fields-container">
-                        <!-- Aquí se irán añadiendo los inputs dinámicos -->
+                        <!-- Campos dinámicos -->
                     </div>
 
-                    <button type="button" id="btn-add-field" class="btn btn-secondary btn-sm">
-                        <i data-lucide="plus-circle"></i> Añadir Campo Personalizado
+                    <button type="button" id="btn-add-field" class="btn btn-secondary w-full">
+                        <i data-lucide="plus-circle"></i> Añadir Campo Nuevo
                     </button>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-neutral" id="btn-cancel-form">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btn-submit-form">Guardar Equipo</button>
+                <div class="slide-footer">
+                    <button type="submit" class="btn btn-primary w-full" id="btn-submit-form">Guardar en Inventario</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- ==================== MODAL: AVISOS Y MENSAJES (Sustituto de alert) ==================== -->
-    <div id="modal-alert" class="modal modal-alert-sys">
-        <div class="modal-content alert-content">
-            <div class="alert-icon-container">
-                <i data-lucide="info" id="sys-alert-icon"></i>
+    <!-- ==================== MODAL: AVISOS Y MENSAJES DEL SISTEMA ==================== -->
+    <div id="modal-alert" class="native-alert-modal">
+        <div class="native-alert-box">
+            <div class="alert-icon-native" id="sys-alert-icon-container">
+                <i data-lucide="info"></i>
             </div>
-            <h3 id="sys-alert-title">Mensaje del sistema</h3>
-            <p id="sys-alert-text">Detalles del mensaje aquí.</p>
-            <div class="modal-footer centered">
-                <button class="btn btn-primary" id="btn-close-sys-alert">Entendido</button>
-            </div>
+            <h3 id="sys-alert-title">Aviso</h3>
+            <p id="sys-alert-text">Detalles del mensaje.</p>
+            <button class="btn-alert-ok" id="btn-close-sys-alert">Aceptar</button>
         </div>
     </div>
 
     <!-- ==================== MODAL: CONFIRMACIÓN DE ACCIÓN ==================== -->
-    <div id="modal-confirm" class="modal modal-alert-sys">
-        <div class="modal-content alert-content">
-            <div class="alert-icon-container warning">
+    <div id="modal-confirm" class="native-alert-modal">
+        <div class="native-alert-box">
+            <div class="alert-icon-native warning">
                 <i data-lucide="help-circle"></i>
             </div>
-            <h3>¿Estás seguro?</h3>
+            <h3>¿Confirmar acción?</h3>
             <p id="sys-confirm-text">Esta acción no se puede deshacer.</p>
-            <div class="modal-footer centered">
-                <button class="btn btn-neutral" id="btn-cancel-confirm">Cancelar</button>
-                <button class="btn btn-danger" id="btn-ok-confirm">Confirmar</button>
+            <div class="alert-confirm-buttons">
+                <button class="btn-alert-cancel" id="btn-cancel-confirm">Cancelar</button>
+                <button class="btn-alert-danger" id="btn-ok-confirm">Eliminar</button>
             </div>
         </div>
     </div>
 
     <script src="app.js"></script>
     <script>
-        // Inicializa los iconos de Lucide al cargar
         lucide.createIcons();
     </script>
 </body>
