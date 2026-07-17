@@ -630,5 +630,22 @@
 
     <!-- Script de lógica de negocio -->
     <script src="app.js"></script>
+        <!-- Enlace al manifiesto (añádelo dentro de la etiqueta <head> si lo prefieres, o déjalo aquí) -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0d1321">
+
+    <!-- Script de lógica de negocio existente -->
+    <script src="app.js"></script>
+
+    <!-- Registro del Service Worker para soporte offline e instalación -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('Service Worker registrado con éxito', reg))
+                    .catch(err => console.error('Error al registrar el Service Worker', err));
+            });
+        }
+    </script>
 </body>
 </html>
