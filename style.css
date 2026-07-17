@@ -1,5 +1,5 @@
 /* ==========================================================================
-   HOJA DE ESTILOS PREMIUM - REVOLUCIÓN VISUAL 3D
+   HOJA DE ESTILOS PREMIUM - TOTALMENTE RESPONSIVA Y CORREGIDA
    ========================================================================== */
 :root {
     --bg-dark: #0b0f19;          /* Fondo espacio profundo */
@@ -34,8 +34,8 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     background-color: var(--bg-dark);
     color: var(--text-primary);
-    overflow: hidden; /* Evita scrolls dobles extraños */
-    height: 100vh;
+    overflow: hidden; /* Evita scrolls extraños en el fondo */
+    height: 100dvh;
     width: 100vw;
 }
 
@@ -47,7 +47,7 @@ body {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background: radial-gradient(circle at 10% 20%, rgba(37, 99, 235, 0.18) 0%, transparent 45%),
                 radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
                 radial-gradient(circle at 50% 50%, rgba(239, 68, 68, 0.08) 0%, transparent 60%);
@@ -59,7 +59,7 @@ body {
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background-size: 30px 30px;
     background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
                       linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
@@ -67,20 +67,20 @@ body {
 }
 
 /* ==========================================================================
-   SISTEMA DE NAVEGACIÓN ENTRE PÁGINAS (VISTAS COMPLETAS DESLIZANTES)
+   SISTEMA DE NAVEGACIÓN ENTRE VISTAS (PÁGINAS COMPLETAS DESLIZANTES)
    ========================================================================== */
 .app-view {
     position: fixed;
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh; /* Evita desajustes por el teclado o el navegador móvil */
     display: flex;
     flex-direction: column;
     z-index: 10;
     transform: translateX(100%);
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-    background-color: transparent; /* Permite ver el fondo común */
+    background-color: transparent;
 }
 
 .app-view.active {
@@ -88,7 +88,6 @@ body {
     z-index: 20;
 }
 
-/* Desplazar vistas anteriores hacia la izquierda ligeramente */
 .app-view:not(.active) {
     transform: translateX(100%);
 }
@@ -96,14 +95,15 @@ body {
 .view-scroll-content {
     flex: 1;
     overflow-y: auto;
-    padding: 1.25rem 1.25rem 5rem 1.25rem; /* Margen inferior para no tapar los botones */
+    /* Colchón extra inferior para que el contenido pase limpio sobre los botones de acción */
+    padding: 1.25rem 1.25rem calc(7.5rem + env(safe-area-inset-bottom, 0px)) 1.25rem;
     -webkit-overflow-scrolling: touch;
 }
 
 /* ==========================================================================
    CABECERAS (HEADERS) CON RELIEVE Y CRISTAL
    ========================================================================== */
-.app-header, .app-header-back {
+.app-header {
     background: rgba(15, 23, 42, 0.6);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -111,6 +111,20 @@ body {
     padding: 1rem 1.25rem;
     display: flex;
     justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    z-index: 100;
+}
+
+.app-header-back {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--glass-border);
+    padding: 1rem 1.25rem;
+    display: grid;
+    grid-template-columns: auto 1fr; /* Distribuye espacio asimétrico para no chafar texto */
+    gap: 1rem;
     align-items: center;
     box-shadow: 0 4px 20px rgba(0,0,0,0.3);
     z-index: 100;
@@ -149,7 +163,6 @@ body {
     display: block;
 }
 
-/* Botón atrás */
 .btn-back {
     border: none;
     background: rgba(255, 255, 255, 0.08);
@@ -167,6 +180,15 @@ body {
 
 .btn-back:active {
     transform: scale(0.95);
+}
+
+.header-view-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Evita desborde si el título es largo */
 }
 
 /* ==========================================================================
@@ -199,7 +221,6 @@ body {
     margin-bottom: 0;
 }
 
-/* Filtros */
 .filters-pill-box {
     display: flex;
     background: rgba(255, 255, 255, 0.04);
@@ -226,14 +247,12 @@ body {
     box-shadow: 0 4px 10px rgba(37, 99, 235, 0.4);
 }
 
-/* Grid de fichas compactas */
 .cards-grid {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
 }
 
-/* Ficha Premium */
 .premium-item-card {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
     backdrop-filter: blur(10px);
@@ -353,8 +372,8 @@ body {
    ========================================================================== */
 .detail-hero {
     text-align: center;
-    padding: 2rem 1rem;
-    margin-bottom: 1.5rem;
+    padding: 1.5rem 1rem;
+    margin-bottom: 1rem;
 }
 
 .detail-avatar-container {
@@ -391,7 +410,6 @@ body {
     letter-spacing: -0.5px;
 }
 
-/* Caja de especificaciones */
 .detail-specs-box {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
@@ -439,7 +457,6 @@ body {
     color: #ffffff;
 }
 
-/* Indicadores de estado 3D */
 .status-badge-3d {
     font-size: 0.7rem;
     font-weight: 800;
@@ -509,7 +526,6 @@ body {
 
 .btn-3d-success:active {
     transform: scale(0.96);
-    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
 }
 
 .btn-3d-danger {
@@ -522,35 +538,30 @@ body {
     transform: scale(0.96);
 }
 
-.btn-3d-neutral {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid var(--glass-border);
-    color: #ffffff;
-}
-
-/* Acciones inferiores de la página */
+/* MENÚ ACCIONES FLOTANTE FIJO (SOPORTE ÁREAS SEGURAS) */
 .app-footer-actions {
     position: fixed;
     bottom: 0;
     left: 0;
     width: 100vw;
-    background: rgba(15, 23, 42, 0.85);
+    background: rgba(15, 23, 42, 0.9);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-top: 1px solid var(--glass-border);
-    padding: 1rem 1.25rem 1.5rem 1.25rem;
+    /* padding dinámico que respeta el botón físico del móvil o barra de gestos */
+    padding: 1rem 1.25rem calc(1.20rem + env(safe-area-inset-bottom, 0px)) 1.25rem;
     display: flex;
     gap: 0.75rem;
     z-index: 100;
 }
 
 /* ==========================================================================
-   FORMULARIOS COMPLETOS Y ENTRADAS DE TEXTO NATIVAS
+   FORMULARIOS Y CAMPOS ADAPTADOS A MÓVIL (SIN DESBORDES)
    ========================================================================== */
 .form-container {
     display: flex;
     flex-direction: column;
-    height: calc(100vh - 65px); /* Descontando cabecera */
+    height: calc(100dvh - 65px);
 }
 
 .form-card {
@@ -566,6 +577,13 @@ body {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 0.75rem;
+}
+
+/* Evita que se solapen dos elementos anchos en pantallas pequeñas */
+@media (max-width: 400px) {
+    .grid-2 {
+        grid-template-columns: 1fr;
+    }
 }
 
 .form-group {
@@ -604,7 +622,9 @@ body {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
 }
 
-/* Estilos de campos personalizados dinámicos */
+/* ==========================================================================
+   REDISERÑO EN REJILLA DE LOS DATOS A CONTROLAR (DATOS DINÁMICOS)
+   ========================================================================== */
 .dynamic-fields-card {
     background: rgba(255, 255, 255, 0.02);
 }
@@ -630,24 +650,51 @@ body {
     margin-bottom: 0.85rem;
 }
 
+/* Estructura dividida en dos filas para caber bien en pantallas estrechas */
 .custom-field-row {
-    background: rgba(0, 0, 0, 0.2);
+    background: rgba(0, 0, 0, 0.25);
     border: 1px solid var(--glass-border);
-    padding: 0.65rem;
+    padding: 0.85rem;
     border-radius: 12px;
     display: grid;
-    grid-template-columns: 1.2fr 1.5fr auto auto;
-    gap: 0.4rem;
-    align-items: center;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
 }
 
 .custom-field-row input {
+    width: 100%;
+    min-width: 0; /* Evita que los inputs empujen hacia la derecha saliéndose del contenedor */
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid var(--glass-border);
     color: white;
-    padding: 0.45rem;
+    padding: 0.55rem;
     border-radius: 8px;
-    font-size: 0.8rem;
+    font-size: 0.85rem;
+}
+
+/* Reubicamos los botones de Alerta y Borrar abajo de sus respectivos inputs */
+.custom-field-row .switch-container,
+.custom-field-row .btn-delete-field {
+    grid-row: 2;
+}
+
+.custom-field-row .switch-container {
+    grid-column: 1;
+    flex-direction: row; /* Alerta + Switch en horizontal */
+    gap: 0.5rem;
+    align-items: center;
+    justify-self: start;
+}
+
+.custom-field-row .btn-delete-field {
+    grid-column: 2;
+    justify-self: end;
+    align-self: center;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+    color: var(--danger);
 }
 
 .btn-add-custom-field {
@@ -670,25 +717,17 @@ body {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-.btn-delete-field {
-    border: none;
-    background: none;
-    color: var(--danger);
-    cursor: pointer;
-    padding: 0.25rem;
-}
-
-/* Interruptor (Switch de Alerta) */
+/* Interruptor Switch moderno */
 .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
 .switch input { opacity: 0; width: 0; height: 0; }
 .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #334155; transition: .3s; border-radius: 34px; }
 .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
 input:checked + .slider { background-color: var(--success); }
 input:checked + .slider:before { transform: translateX(14px); }
-.switch-container { display: flex; flex-direction: column; align-items: center; font-size: 0.6rem; color: var(--text-secondary); font-weight: 700; }
+.switch-container { display: flex; flex-direction: column; align-items: center; font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; }
 
 /* ==========================================================================
-   DISEÑO DE ALERTAS DIALOGS PREMIUM (BLUR EN ALTA RESOLUCIÓN)
+   MODALES DE SISTEMA Y ALERTAS (DISEÑO BLUR DE CRISTAL DE ALTA CALIDAD)
    ========================================================================== */
 .alert-blur-overlay {
     display: none;
@@ -696,7 +735,7 @@ input:checked + .slider:before { transform: translateX(14px); }
     top: 0;
     left: 0;
     width: 100vw;
-    height: 100vh;
+    height: 100dvh;
     background-color: rgba(0,0,0,0.6);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
@@ -782,10 +821,11 @@ input:checked + .slider:before { transform: translateX(14px); }
     color: var(--danger);
 }
 
-/* Clases de apoyo */
+/* Clases de utilidad */
 .w-full { width: 100%; }
 .flex-1 { flex: 1; }
 .pulse-icon { animation: pulseAnim 2s infinite; }
+
 @keyframes pulseAnim {
     0% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.15); opacity: 0.7; }
