@@ -1,8 +1,8 @@
 const CACHE_NAME = 'mantresi-cache-v1';
 const ASSETS_TO_CACHE = [
   './',
-  './index.html',
-  './app.js',
+  '/index.html',
+  '/app.js',
   'https://unpkg.com/lucide@latest'
 ];
 
