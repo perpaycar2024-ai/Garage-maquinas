@@ -1,10 +1,15 @@
-const CACHE_NAME = 'mantresi-cache-v2';
+const CACHE_NAME = 'mantresi-cache-v1';
 const ASSETS_TO_CACHE = [
   './',
-  '/index.html',
-  '/app.js',
+  './index.html',
+  './app.js',
+  './icon-192.png',
+  './icon-512.png',
   'https://unpkg.com/lucide@latest'
 ];
+
+// El resto del código que ya tienes abajo (install, activate, fetch) déjalo exactamente como está.
+
 
 // Instalación del Service Worker y almacenamiento en caché de los archivos estáticos
 self.addEventListener('install', event => {
