@@ -1,6 +1,5 @@
 const CACHE_NAME = 'mantresi-v3';
 
-// Instalación limpia sin forzar archivos problemáticos en caché inicial
 self.addEventListener('install', event => {
   self.skipWaiting();
 });
@@ -15,9 +14,7 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Estrategia dinámica: intenta red, si no hay internet busca en caché
 self.addEventListener('fetch', event => {
-  // Evitamos peticiones externas como CDN de Lucide para que no bloqueen el SW
   if (!event.request.url.startsWith(self.location.origin)) {
     return;
   }
