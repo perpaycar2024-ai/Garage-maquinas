@@ -2,7 +2,7 @@
   "name": "Mantresi Premium",
   "short_name": "Mantresi",
   "description": "Gestión premium de mantenimiento de vehículos y maquinaria",
-  "start_url": "./index.html",
+  "start_url": "/index.html",
   "display": "standalone",
   "background_color": "#0d1321",
   "theme_color": "#0d1321",
