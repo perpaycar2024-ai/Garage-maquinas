@@ -7,11 +7,11 @@ let appState = {
     vehiculos: [
         {
             id: "1",
-            nombre: "Coche de prueba",
+            nombre: "Coche rojo",
             tipo: "Vehículo",
             icono: "🚗",
-            estado: "ok",
-            notas: "ITV pasada sin defectos. Próximo cambio de neumáticos delanteros recomendado.",
+            estado: "ok", // 'ok', 'revision', 'taller'
+            notas: "ITV pasada sin defectos en julio. Próximo cambio de neumáticos delanteros recomendado para invierno.",
             datos: [
                 { id: "d1", nombre: "Última Revisión", valor: "2026-07-15", alerta: false },
                 { id: "d2", nombre: "Próxima ITV / Alerta", valor: "2027-07-15", alerta: true }
@@ -22,14 +22,14 @@ let appState = {
     vistaAnteriorId: "view-dashboard"
 };
 
-// Cargar datos de LocalStorage de forma segura
-try {
-    const datosGuardados = localStorage.getItem('mycar_data');
-    if (datosGuardados) {
+// Cargar datos de LocalStorage al iniciar (si existen)
+const datosGuardados = localStorage.getItem('mycar_data');
+if (datosGuardados) {
+    try {
         appState.vehiculos = JSON.parse(datosGuardados);
+    } catch (e) {
+        console.error("Error al cargar LocalStorage, usando datos por defecto.", e);
     }
-} catch (e) {
-    console.warn("No se pudo cargar LocalStorage. Usando datos por defecto.", e);
 }
 
 // 2. INICIALIZACIÓN AL CARGAR EL DOCUMENTO
@@ -37,23 +37,22 @@ document.addEventListener("DOMContentLoaded", () => {
     renderDashboard();
     configurarEventosGlobales();
     
+    // El botón de añadir nuevo vehículo desde el Dashboard
     const btnAdd = document.getElementById("btn-add-vehicle");
     if (btnAdd) {
-        btnAdd.addEventListener("click", abrirEditorNuevo);
+        btnAdd.addEventListener("click", () => {
+            abrirEditorNuevo();
+        });
     }
 });
 
 // Guardar en LocalStorage de forma segura
 function guardarEnLocalStorage() {
-    try {
-        localStorage.setItem('mycar_data', JSON.stringify(appState.vehiculos));
-    } catch (e) {
-        console.error("Error al guardar en LocalStorage", e);
-    }
+    localStorage.setItem('mycar_data', JSON.stringify(appState.vehiculos));
 }
 
 // ==========================================================================
-// SISTEMA DE NAVEGACIÓN PREMIUM
+// SISTEMA DE NAVEGACIÓN PREMIUM (CON SOPORTE DVH Y DESLIZAMIENTO)
 // ==========================================================================
 function navegarA(idVistaDestino) {
     const vistas = document.querySelectorAll('.app-view');
@@ -61,17 +60,23 @@ function navegarA(idVistaDestino) {
     
     if (!vistaDestino) return;
 
+    // Guardar el historial para el botón "Atrás"
     const activaActual = document.querySelector('.app-view.active');
     if (activaActual && activaActual.id !== idVistaDestino) {
         appState.vistaAnteriorId = activaActual.id;
     }
 
+    // Quitar la clase activa de las demás y ponérsela a la de destino
     vistas.forEach(vista => {
-        vista.classList.remove('active');
+        if (vista.id === idVistaDestino) {
+            vista.classList.add('active');
+        } else {
+            vista.classList.remove('active');
+        }
     });
-    vistaDestino.classList.add('active');
 }
 
+// Regresar a la vista previa
 function volverAtras() {
     navegarA(appState.vistaAnteriorId || "view-dashboard");
 }
@@ -80,7 +85,6 @@ function volverAtras() {
 // LÓGICA DE COMPROBACIÓN DE ALERTAS (INTELIGENTE)
 // ==========================================================================
 function recalcularEstadoVehiculo(vehiculo) {
-    if (!vehiculo || !vehiculo.datos) return;
     const hoy = new Date();
     let peorEstado = "ok";
 
@@ -90,12 +94,12 @@ function recalcularEstadoVehiculo(vehiculo) {
             if (isNaN(fechaLimite.getTime())) return;
 
             if (hoy > fechaLimite) {
-                peorEstado = "taller"; 
+                peorEstado = "taller"; // Crítico: Se ha pasado de la fecha
             } else {
                 const msDiferencia = fechaLimite - hoy;
                 const diasRestantes = Math.ceil(msDiferencia / (1000 * 60 * 60 * 24));
                 if (diasRestantes <= 30 && peorEstado !== "taller") {
-                    peorEstado = "revision"; 
+                    peorEstado = "revision"; // Preventivo: Próximo a vencer
                 }
             }
         }
@@ -105,7 +109,7 @@ function recalcularEstadoVehiculo(vehiculo) {
 }
 
 // ==========================================================================
-// RENDERIZADO DEL DASHBOARD
+// RENDERIZADO DEL DASHBOARD (PANTALLA PRINCIPAL)
 // ==========================================================================
 function renderDashboard() {
     const contenedor = document.getElementById("dashboard-cards-grid");
@@ -138,8 +142,8 @@ function renderDashboard() {
                     <span style="font-size: 1.4rem;">${vehiculo.icono || '🚗'}</span>
                 </div>
                 <div>
-                    <h3>${vehiculo.nombre || 'Sin nombre'}</h3>
-                    <span class="subtitle">${vehiculo.tipo || 'Vehículo'}</span>
+                    <h3>${vehiculo.nombre}</h3>
+                    <span class="subtitle">${vehiculo.tipo}</span>
                 </div>
             </div>
             <div>
@@ -157,6 +161,7 @@ function renderDashboard() {
     actualizarAlertasGlobales();
 }
 
+// Actualiza el widget superior de alertas en el Dashboard
 function actualizarAlertasGlobales() {
     const contenedorAlertas = document.getElementById("alerts-list");
     if (!contenedorAlertas) return;
@@ -165,7 +170,6 @@ function actualizarAlertasGlobales() {
     let alertasActivas = 0;
 
     appState.vehiculos.forEach(vehiculo => {
-        if (!vehiculo.datos) return;
         vehiculo.datos.forEach(dato => {
             if (dato.alerta && dato.valor) {
                 const fechaLimite = new Date(dato.valor);
@@ -196,7 +200,7 @@ function actualizarAlertasGlobales() {
 }
 
 // ==========================================================================
-// PANTALLA DETALLE
+// PANTALLA DETALLE (#view-detail)
 // ==========================================================================
 function verDetalleVehiculo(id) {
     const vehiculo = appState.vehiculos.find(v => v.id === id);
@@ -204,55 +208,48 @@ function verDetalleVehiculo(id) {
 
     appState.vehiculoSeleccionadoId = id;
 
-    // Actualización de textos con protección opcional (?.) por si falta el ID en el HTML
-    const elIcon = document.getElementById("detail-icon");
-    const elType = document.getElementById("detail-type");
-    const elTitle = document.getElementById("detail-title");
-    const elBadge = document.getElementById("detail-status-badge");
+    document.getElementById("detail-icon").innerText = vehiculo.icono || "🚗";
+    document.getElementById("detail-type").innerText = vehiculo.tipo.toUpperCase();
+    document.getElementById("detail-title").innerText = vehiculo.nombre;
 
-    if (elIcon) elIcon.innerText = vehiculo.icono || "🚗";
-    if (elType) elType.innerText = (vehiculo.tipo || "VEHÍCULO").toUpperCase();
-    if (elTitle) elTitle.innerText = vehiculo.nombre || "Sin nombre";
+    // Badge de estado general
+    const badge = document.getElementById("detail-status-badge");
+    badge.className = `status-badge-3d ${vehiculo.estado}`;
+    if (vehiculo.estado === "ok") badge.innerText = "OPERATIVO";
+    if (vehiculo.estado === "revision") badge.innerText = "ATENCIÓN";
+    if (vehiculo.estado === "taller") badge.innerText = "VENCIDO";
 
-    if (elBadge) {
-        elBadge.className = `status-badge-3d ${vehiculo.estado}`;
-        if (vehiculo.estado === "ok") elBadge.innerText = "OPERATIVO";
-        if (vehiculo.estado === "revision") elBadge.innerText = "ATENCIÓN";
-        if (vehiculo.estado === "taller") elBadge.innerText = "VENCIDO";
-    }
-
+    // Pintar los datos dinámicos en la ficha técnica
     const listaSpecs = document.getElementById("detail-specs-list");
-    if (listaSpecs) {
-        listaSpecs.innerHTML = "";
-        if (vehiculo.datos) {
-            vehiculo.datos.forEach(dato => {
-                const item = document.createElement("div");
-                item.className = "spec-item-3d";
-                
-                let alertaIcono = "";
-                if (dato.alerta) {
-                    const fechaLimite = new Date(dato.valor);
-                    const hoy = new Date();
-                    alertaIcono = hoy > fechaLimite ? " 🚨" : " 🔔";
-                }
+    listaSpecs.innerHTML = "";
 
-                item.innerHTML = `
-                    <span class="label">${dato.nombre}${alertaIcono}</span>
-                    <span class="value">${formatearFechaAMostrar(dato.valor)}</span>
-                `;
-                listaSpecs.appendChild(item);
-            });
+    vehiculo.datos.forEach(dato => {
+        const item = document.createElement("div");
+        item.className = "spec-item-3d";
+        
+        let alertaIcono = "";
+        if (dato.alerta) {
+            const fechaLimite = new Date(dato.valor);
+            const hoy = new Date();
+            alertaIcono = hoy > fechaLimite ? " 🚨" : " 🔔";
         }
-    }
 
-    // Comprobación segura de Notas en detalle
+        item.innerHTML = `
+            <span class="label">${dato.nombre}${alertaIcono}</span>
+            <span class="value">${formatearFechaAMostrar(dato.valor)}</span>
+        `;
+        listaSpecs.appendChild(item);
+    });
+
+    // Pintar notas e incidencias
     const contenedorNotas = document.getElementById("detail-notes-container");
     if (contenedorNotas) {
-        if (vehiculo.notas && vehiculo.notas.trim() !== "") {
+        if (vehiculo.notes || vehiculo.notas) { // Soportar ambos nombres de variable por si acaso
+            const notasTexto = vehiculo.notas || vehiculo.notes;
             contenedorNotas.innerHTML = `
                 <div class="detail-specs-box" style="margin-top: 1rem;">
                     <div class="specs-box-title">📝 Notas e Incidencias</div>
-                    <p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); white-space: pre-line;">${vehiculo.notas}</p>
+                    <p style="font-size: 0.9rem; line-height: 1.5; color: var(--text-primary); white-space: pre-line; margin: 0;">${notasTexto}</p>
                 </div>
             `;
         } else {
@@ -264,27 +261,24 @@ function verDetalleVehiculo(id) {
 }
 
 // ==========================================================================
-// FORMULARIO DE EDICIÓN Y CREACIÓN
+// FORMULARIO DE EDICIÓN Y CREACIÓN (#view-edit)
 // ==========================================================================
 function abrirEditorNuevo() {
     appState.vehiculoSeleccionadoId = null;
     
-    const elEditTitle = document.getElementById("edit-view-title");
-    const elNombre = document.getElementById("input-nombre");
-    const elTipo = document.getElementById("select-tipo");
+    document.getElementById("edit-view-title").innerText = "Añadir Ficha";
+    document.getElementById("input-nombre").value = "";
+    document.getElementById("select-tipo").value = "Vehículo";
+    
     const txtNotas = document.getElementById("textarea-notas");
-
-    if (elEditTitle) elEditTitle.innerText = "Añadir Ficha";
-    if (elNombre) elNombre.value = "";
-    if (elTipo) elTipo.value = "Vehículo";
     if (txtNotas) txtNotas.value = "";
     
     const contenedorCampos = document.getElementById("custom-fields-container");
-    if (contenedorCampos) {
-        contenedorCampos.innerHTML = "";
-        agregarCampoDinamico("Última Revisión", "", false);
-        agregarCampoDinamico("Próxima ITV / Alerta", "", true);
-    }
+    contenedorCampos.innerHTML = "";
+
+    // Añadir campos por defecto
+    agregarCampoDinamico("Última Revisión", "", false);
+    agregarCampoDinamico("Próxima ITV / Alerta", "", true);
 
     navegarA("view-edit");
 }
@@ -293,25 +287,19 @@ function abrirEditorExistente() {
     const vehiculo = appState.vehiculos.find(v => v.id === appState.vehiculoSeleccionadoId);
     if (!vehiculo) return;
 
-    const elEditTitle = document.getElementById("edit-view-title");
-    const elNombre = document.getElementById("input-nombre");
-    const elTipo = document.getElementById("select-tipo");
-    const txtNotas = document.getElementById("textarea-notas");
+    document.getElementById("edit-view-title").innerText = "Editar Ficha";
+    document.getElementById("input-nombre").value = vehiculo.nombre;
+    document.getElementById("select-tipo").value = vehiculo.tipo;
 
-    if (elEditTitle) elEditTitle.innerText = "Editar Ficha";
-    if (elNombre) elNombre.value = vehiculo.nombre || "";
-    if (elTipo) elTipo.value = vehiculo.tipo || "Vehículo";
-    if (txtNotas) txtNotas.value = vehiculo.notas || "";
+    const txtNotas = document.getElementById("textarea-notas");
+    if (txtNotas) txtNotas.value = vehiculo.notas || vehiculo.notes || "";
 
     const contenedorCampos = document.getElementById("custom-fields-container");
-    if (contenedorCampos) {
-        contenedorCampos.innerHTML = "";
-        if (vehiculo.datos) {
-            vehiculo.datos.forEach(dato => {
-                agregarCampoDinamico(dato.nombre, dato.valor, dato.alerta);
-            });
-        }
-    }
+    contenedorCampos.innerHTML = "";
+
+    vehiculo.datos.forEach(dato => {
+        agregarCampoDinamico(dato.nombre, dato.valor, dato.alerta);
+    });
 
     navegarA("view-edit");
 }
@@ -344,6 +332,7 @@ function agregarCampoDinamico(nombre = "", valor = "", alerta = false) {
 
     contenedor.appendChild(row);
 
+    // LÓGICA INTELIGENTE DE CÁLCULO DE FECHAS AUTOMÁTICAS
     const inputNombre = row.querySelector('.field-name');
     const inputFecha = row.querySelector('.field-value');
 
@@ -391,22 +380,20 @@ function actualizarOCrearProximaFecha(nuevaFecha) {
     }
 }
 
-function eliminarFilaDinamica(id) {
+// EXPOSICIÓN GLOBAL DE LA FUNCIÓN DE ELIMINAR FILA (Evita roturas de JavaScript)
+window.eliminarFilaDinamica = function(id) {
     const fila = document.getElementById(id);
     if (fila) fila.remove();
-}
+};
 
 // ==========================================================================
 // GUARDAR LOS CAMBIOS DEL FORMULARIO
 // ==========================================================================
 function guardarFormulario() {
-    const elNombre = document.getElementById("input-nombre");
-    const elTipo = document.getElementById("select-tipo");
-    const elNotas = document.getElementById("textarea-notas");
-
-    const nombre = elNombre ? elNombre.value.trim() : "";
-    const tipo = elTipo ? elTipo.value : "Vehículo";
-    const notasVal = elNotas ? elNotas.value.trim() : "";
+    const nombre = document.getElementById("input-nombre").value.trim();
+    const tipo = document.getElementById("select-tipo").value;
+    const txtNotas = document.getElementById("textarea-notas");
+    const notasVal = txtNotas ? txtNotas.value.trim() : "";
 
     if (!nombre) {
         mostrarAlertaModal("Falta Información", "Por favor, escribe un nombre o identificador para continuar.", "danger");
@@ -417,13 +404,9 @@ function guardarFormulario() {
     const datosProcesados = [];
 
     filas.forEach(fila => {
-        const inputNombre = fila.querySelector('.field-name');
-        const inputFecha = fila.querySelector('.field-value');
-        const inputCheck = fila.querySelector('.field-alert');
-
-        const concepto = inputNombre ? inputNombre.value.trim() : "";
-        const fechaVal = inputFecha ? inputFecha.value : "";
-        const alertaVal = inputCheck ? inputCheck.checked : false;
+        const concepto = fila.querySelector('.field-name').value.trim();
+        const fechaVal = fila.querySelector('.field-value').value;
+        const alertaVal = fila.querySelector('.field-alert').checked;
 
         if (concepto) {
             datosProcesados.push({
@@ -438,6 +421,7 @@ function guardarFormulario() {
     const emojiIcono = tipo === "Vehículo" ? "🚗" : tipo === "Herramienta" ? "🔧" : "📦";
 
     if (appState.vehiculoSeleccionadoId) {
+        // Modo Edición
         const index = appState.vehiculos.findIndex(v => v.id === appState.vehiculoSeleccionadoId);
         if (index !== -1) {
             appState.vehiculos[index].nombre = nombre;
@@ -448,6 +432,7 @@ function guardarFormulario() {
             recalcularEstadoVehiculo(appState.vehiculos[index]);
         }
     } else {
+        // Modo Creación
         const nuevoVehiculo = {
             id: 'v_' + Math.random().toString(36).substr(2, 9),
             nombre: nombre,
@@ -503,21 +488,17 @@ function mostrarAlertaModal(titulo, mensaje, tipo = "info") {
         <div class="alert-3d-icon ${claseIcono}">${icono}</div>
         <h3>${titulo}</h3>
         <p>${mensaje}</p>
-        <button class="btn-alert-close" id="btn-cerrar-modal-ok">Entendido</button>
+        <button class="btn-alert-close" onclick="cerrarAlertaModal()">Entendido</button>
     `;
 
     overlay.classList.add("active");
-
-    const btnOk = document.getElementById("btn-cerrar-modal-ok");
-    if (btnOk) {
-        btnOk.addEventListener("click", cerrarAlertaModal);
-    }
 }
 
-function cerrarAlertaModal() {
+// EXPOSICIÓN GLOBAL PARA QUE EL CLICK DEL HTML PUEDA CERRARLO
+window.cerrarAlertaModal = function() {
     const overlay = document.getElementById("alert-modal-overlay");
     if (overlay) overlay.classList.remove("active");
-}
+};
 
 function mostrarConfirmacionModal(titulo, mensaje, callbackConfirmar) {
     const overlay = document.getElementById("alert-modal-overlay");
@@ -530,17 +511,12 @@ function mostrarConfirmacionModal(titulo, mensaje, callbackConfirmar) {
         <h3>${titulo}</h3>
         <p>${mensaje}</p>
         <div class="alert-confirm-grid">
-            <button class="btn-confirm-cancel" id="btn-modal-cancelar">Cancelar</button>
+            <button class="btn-confirm-cancel" onclick="cerrarAlertaModal()">Cancelar</button>
             <button class="btn-confirm-danger" id="btn-modal-confirm-action">Eliminar</button>
         </div>
     `;
 
     overlay.classList.add("active");
-
-    const btnCancelar = document.getElementById("btn-modal-cancelar");
-    if (btnCancelar) {
-        btnCancelar.addEventListener("click", cerrarAlertaModal);
-    }
 
     const btnConfirmar = document.getElementById("btn-modal-confirm-action");
     if (btnConfirmar) {
