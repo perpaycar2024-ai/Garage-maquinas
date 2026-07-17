@@ -1,57 +1,59 @@
 /* ==========================================================================
-   SISTEMA DE GESTIÓN - LOGICA COMPLETA DE LA APLICACIÓN (app.js)
+   MANTRESI PREMIUM - LÓGICA DE NEGOCIO INTEGRADA (app.js)
    ========================================================================== */
 
-// 1. ESTADO GLOBAL DE LA APLICACIÓN
+// 1. ESTADO GLOBAL DE LA APLICACIÓN (Totalmente compatible con tus datos en LocalStorage)
 let appState = {
-    vehiculos: [
-        {
-            id: "1",
-            nombre: "Coche rojo",
-            tipo: "Vehículo",
-            icono: "🚗",
-            estado: "ok", // 'ok', 'revision', 'taller'
-            datos: [
-                { id: "d1", nombre: "Última Revisión", valor: "2026-07-15", alerta: false },
-                { id: "d2", nombre: "Próxima ITV / Alerta", valor: "2027-07-15", alerta: true }
-            ]
-        }
-    ],
-    vehiculoSeleccionadoId: null,
-    vistaAnteriorId: "view-dashboard"
+    equipos: [],
+    equipoSeleccionadoId: null,
+    vistaAnteriorId: "view-dashboard",
+    filtroActivo: "all"
 };
 
-// Cargar datos de LocalStorage al iniciar (si existen)
-const datosGuardados = localStorage.getItem('mycar_data');
-if (datosGuardados) {
+// Cargar y migrar datos antiguos del LocalStorage de forma segura
+try {
+    const datosGuardados = localStorage.getItem('mycar_data'); // Mantenemos tu clave para no perder tus datos
+    if (datosGuardados) {
+        const parseados = JSON.parse(datosGuardados);
+        if (Array.isArray(parseados)) {
+            appState.equipos = parseados.map(e => {
+                // Mapear campos antiguos si los hubiera a la estructura de tu HTML
+                return {
+                    id: e.id || 'eq_' + Math.random().toString(36).substr(2, 9),
+                    nombre: e.nombre || e.name || 'Sin nombre',
+                    tipo: e.tipo || e.type || 'vehiculo', // 'vehiculo' o 'maquina'
+                    estado: e.estado || e.status || 'ok', // 'ok', 'revision', 'taller'
+                    datos: Array.isArray(e.datos) ? e.datos : []
+                };
+            });
+        }
+    }
+} catch (error) {
+    console.warn("No se pudo cargar o procesar LocalStorage. Iniciando vacío.", error);
+}
+
+// Guardar en LocalStorage de forma segura
+function guardarEnLocalStorage() {
     try {
-        appState.vehiculos = JSON.parse(datosGuardados);
+        localStorage.setItem('mycar_data', JSON.stringify(appState.equipos));
     } catch (e) {
-        console.error("Error al cargar LocalStorage, usando datos por defecto.", e);
+        console.error("Error al guardar en LocalStorage", e);
     }
 }
 
 // 2. INICIALIZACIÓN AL CARGAR EL DOCUMENTO
 document.addEventListener("DOMContentLoaded", () => {
-    renderDashboard();
-    configurarEventosGlobales();
-    
-    // El botón de añadir nuevo vehículo desde el Dashboard
-    const btnAdd = document.getElementById("btn-add-vehicle");
-    if (btnAdd) {
-        btnAdd.addEventListener("click", () => {
-            abrirEditorNuevo();
-        });
+    try {
+        renderDashboard();
+        configurarEventosGlobales();
+        lucide.createIcons();
+    } catch (error) {
+        console.error("Error crítico en la inicialización:", error);
     }
 });
 
-// Guardar en LocalStorage de forma segura
-function guardarEnLocalStorage() {
-    localStorage.setItem('mycar_data', JSON.stringify(appState.vehiculos));
-}
-
 // ==========================================================================
-// SISTEMA DE NAVEGACIÓN PREMIUM (CON SOPORTE DVH Y DESLIZAMIENTO)
+// SISTEMA DE NAVEGACIÓN SEGURO (Manejando tus IDs de vista)
 // ==========================================================================
 function navegarA(idVistaDestino) {
     const vistas = document.querySelectorAll('.app-view');
@@ -59,122 +61,89 @@ function navegarA(idVistaDestino) {
     
     if (!vistaDestino) return;
 
-    // Guardar el historial para el botón "Atrás"
     const activaActual = document.querySelector('.app-view.active');
     if (activaActual && activaActual.id !== idVistaDestino) {
         appState.vistaAnteriorId = activaActual.id;
     }
 
-    // Quitar la clase activa de las demás y ponérsela a la de destino
-    vistas.forEach(vista => {
-        if (vista.id === idVistaDestino) {
-            vista.classList.add('active');
-        } else {
-            vista.classList.remove('active');
-        }
-    });
+    vistas.forEach(vista => vista.classList.remove('active'));
+    vistaDestino.classList.add('active');
 }
 
-// Regresar a la vista previa
 function volverAtras() {
     navegarA(appState.vistaAnteriorId || "view-dashboard");
 }
 
 // ==========================================================================
-// LÓGICA DE COMPROBACIÓN DE ALERTAS (INTELIGENTE)
-// ==========================================================================
-function recalcularEstadoVehiculo(vehiculo) {
-    const hoy = new Date();
-    let peorEstado = "ok";
-
-    vehiculo.datos.forEach(dato => {
-        // Solo evaluamos si tiene la alerta activada y tiene un valor de fecha válido
-        if (dato.alerta && dato.valor) {
-            const fechaLimite = new Date(dato.valor);
-            if (isNaN(fechaLimite.getTime())) return;
-
-            // Comparación de fechas
-            if (hoy > fechaLimite) {
-                peorEstado = "taller"; // Crítico: Se ha pasado de la fecha
-            } else {
-                // Si faltan 30 días o menos para que venza
-                const msDiferencia = fechaLimite - hoy;
-                const diasRestantes = Math.ceil(msDiferencia / (1000 * 60 * 60 * 24));
-                if (diasRestantes <= 30 && peorEstado !== "taller") {
-                    peorEstado = "revision"; // Preventivo: Próximo a vencer
-                }
-            }
-        }
-    });
-
-    vehiculo.estado = peorEstado;
-}
-
-// ==========================================================================
-// RENDERIZADO DEL DASHBOARD (PANTALLA PRINCIPAL)
+// RENDERIZADO DEL DASHBOARD (INVENTARIO Y ALERTAS)
 // ==========================================================================
 function renderDashboard() {
-    const contenedor = document.getElementById("dashboard-cards-grid");
-    if (!contenedor) return;
+    const contenedorInventario = document.getElementById("inventory-grid");
+    if (!contenedorInventario) return;
 
-    contenedor.innerHTML = "";
+    contenedorInventario.innerHTML = "";
 
-    if (appState.vehiculos.length === 0) {
-        contenedor.innerHTML = `
-            <div style="text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
-                <p style="font-size: 1.2rem; margin-bottom: 1rem; font-weight: bold;">No tienes vehículos añadidos</p>
-                <p style="font-size: 0.85rem;">Pulsa el botón de abajo para empezar.</p>
-            </div>
-        `;
-        return;
-    }
-
-    appState.vehiculos.forEach(vehiculo => {
-        // Aseguramos que el estado del vehículo esté actualizado antes de pintar
-        recalcularEstadoVehiculo(vehiculo);
-
-        let badgeTexto = "Operativo";
-        if (vehiculo.estado === "revision") badgeTexto = "Revisión pronto";
-        if (vehiculo.estado === "taller") badgeTexto = "Alerta vencida";
-
-        const card = document.createElement("div");
-        card.className = `premium-item-card ${vehiculo.estado}`;
-        card.innerHTML = `
-            <div class="card-title-block">
-                <div class="avatar-wrapper-3d">
-                    <span style="font-size: 1.4rem;">${vehiculo.icono || '🚗'}</span>
-                </div>
-                <div>
-                    <h3>${vehiculo.nombre}</h3>
-                    <span class="subtitle">${vehiculo.tipo}</span>
-                </div>
-            </div>
-            <div>
-                <span class="status-badge-3d ${vehiculo.estado}">${badgeTexto}</span>
-            </div>
-        `;
-
-        card.addEventListener("click", () => {
-            verDetalleVehiculo(vehiculo.id);
-        });
-
-        contenedor.appendChild(card);
+    // Filtrar equipos según el botón activo
+    const equiposFiltrados = appState.equipos.filter(equipo => {
+        if (appState.filtroActivo === "all") return true;
+        return equipo.tipo === appState.filtroActivo;
     });
 
+    if (equiposFiltrados.length === 0) {
+        contenedorInventario.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem 1rem; color: var(--text-secondary);">
+                <p style="font-size: 1.1rem; margin-bottom: 0.5rem; font-weight: bold;">No hay elementos para mostrar</p>
+                <p style="font-size: 0.85rem; opacity: 0.7;">Pulsa el botón "Nuevo" de arriba para empezar.</p>
+            </div>
+        `;
+    } else {
+        equiposFiltrados.forEach(equipo => {
+            const card = document.createElement("div");
+            card.className = `premium-item-card ${equipo.estado}`;
+            
+            // Icono dinámico Lucide
+            const iconoLucide = equipo.tipo === "vehiculo" ? "car" : "wrench";
+            
+            let badgeTexto = "Operativo";
+            if (equipo.estado === "revision") badgeTexto = "Revisión pronto";
+            if (equipo.estado === "taller") badgeTexto = "Alerta vencida";
+
+            card.innerHTML = `
+                <div class="card-title-block">
+                    <div class="avatar-wrapper-3d">
+                        <i data-lucide="${iconoLucide}"></i>
+                    </div>
+                    <div>
+                        <h3>${equipo.nombre}</h3>
+                        <span class="subtitle">${equipo.tipo === "vehiculo" ? "Vehículo" : "Maquinaria / Herramienta"}</span>
+                    </div>
+                </div>
+                <div>
+                    <span class="status-badge-3d ${equipo.estado}">${badgeTexto}</span>
+                </div>
+            `;
+
+            card.addEventListener("click", () => verDetalleEquipo(equipo.id));
+            contenedorInventario.appendChild(card);
+        });
+    }
+
     actualizarAlertasGlobales();
+    lucide.createIcons(); // Vuelve a cargar los iconos generados dinámicamente
 }
 
-// Actualiza el widget superior de alertas en el Dashboard
 function actualizarAlertasGlobales() {
-    const contenedorAlertas = document.getElementById("alerts-list");
+    const contenedorAlertas = document.getElementById("alerts-container");
     if (!contenedorAlertas) return;
 
     contenedorAlertas.innerHTML = "";
     let alertasActivas = 0;
 
-    appState.vehiculos.forEach(vehiculo => {
-        vehiculo.datos.forEach(dato => {
-            if (dato.alerta && dato.valor) {
+    appState.equipos.forEach(equipo => {
+        if (!equipo || !Array.isArray(equipo.datos)) return;
+
+        equipo.datos.forEach(dato => {
+            if (dato && dato.alerta && dato.valor) {
                 const fechaLimite = new Date(dato.valor);
                 const hoy = new Date();
 
@@ -183,109 +152,147 @@ function actualizarAlertasGlobales() {
                     const alertaItem = document.createElement("div");
                     alertaItem.className = "alert-item-3d critical";
                     alertaItem.innerHTML = `
-                        <div class="alert-3d-avatar">🚨</div>
+                        <div class="alert-3d-avatar"><i data-lucide="alert-triangle"></i></div>
                         <div class="info">
-                            <h4>${vehiculo.nombre}: ${dato.nombre}</h4>
+                            <h4>${equipo.nombre}: ${dato.nombre}</h4>
                             <p>Venció el ${formatearFechaAMostrar(dato.valor)}</p>
                         </div>
                     `;
-                    alertaItem.addEventListener("click", () => verDetalleVehiculo(vehiculo.id));
+                    alertaItem.addEventListener("click", () => verDetalleEquipo(equipo.id));
                     contenedorAlertas.appendChild(alertaItem);
                 }
             }
         });
     });
 
-    const tituloAlertas = document.getElementById("alerts-section-title");
-    if (tituloAlertas) {
-        tituloAlertas.style.display = alertasActivas > 0 ? "flex" : "none";
+    // Si no hay alertas de hoy, mostramos un aviso limpio
+    if (alertasActivas === 0) {
+        contenedorAlertas.innerHTML = `
+            <div style="color: var(--text-secondary); font-size: 0.9rem; text-align: center; padding: 1.5rem 0; width: 100%;">
+                🎉 Todo al día. No hay alertas críticas pendientes.
+            </div>
+        `;
     }
+    lucide.createIcons();
 }
 
 // ==========================================================================
 // PANTALLA DETALLE (#view-detail)
 // ==========================================================================
-function verDetalleVehiculo(id) {
-    const vehiculo = appState.vehiculos.find(v => v.id === id);
-    if (!vehiculo) return;
+function verDetalleEquipo(id) {
+    const equipo = appState.equipos.find(e => e.id === id);
+    if (!equipo) return;
 
-    appState.vehiculoSeleccionadoId = id;
+    appState.equipoSeleccionadoId = id;
 
-    document.getElementById("detail-icon").innerText = vehiculo.icono || "🚗";
-    document.getElementById("detail-type").innerText = vehiculo.tipo.toUpperCase();
-    document.getElementById("detail-title").innerText = vehiculo.nombre;
+    // Actualizar datos del héroe de detalle
+    const elIcono = document.getElementById("detail-type-icon");
+    const elTextoTipo = document.getElementById("detail-type-text");
+    const elTitulo = document.getElementById("detail-title");
+    const elBadge = document.getElementById("detail-status-badge");
 
-    // Badge de estado general
-    const badge = document.getElementById("detail-status-badge");
-    badge.className = `status-badge-3d ${vehiculo.estado}`;
-    if (vehiculo.estado === "ok") badge.innerText = "OPERATIVO";
-    if (vehiculo.estado === "revision") badge.innerText = "ATENCIÓN";
-    if (vehiculo.estado === "taller") badge.innerText = "VENCIDO";
+    if (elIcono) {
+        const icono = equipo.tipo === "vehiculo" ? "car" : "wrench";
+        elIcono.innerHTML = `<i data-lucide="${icono}"></i>`;
+    }
+    if (elTextoTipo) elTextoTipo.innerText = (equipo.tipo === "vehiculo" ? "VEHÍCULO" : "MAQUINARIA").toUpperCase();
+    if (elTitulo) elTitulo.innerText = equipo.nombre;
 
-    // Pintar los datos dinámicos en la ficha técnica
+    if (elBadge) {
+        elBadge.className = `status-badge-3d ${equipo.estado}`;
+        if (equipo.estado === "ok") elBadge.innerText = "Operativo";
+        if (equipo.estado === "revision") elBadge.innerText = "Revisión pronto";
+        if (equipo.estado === "taller") elBadge.innerText = "Alerta vencida";
+    }
+
+    // Dibujar la ficha técnica con las fechas clave
     const listaSpecs = document.getElementById("detail-specs-list");
-    listaSpecs.innerHTML = "";
+    if (listaSpecs) {
+        listaSpecs.innerHTML = "";
+        if (Array.isArray(equipo.datos) && equipo.datos.length > 0) {
+            equipo.datos.forEach(dato => {
+                const item = document.createElement("div");
+                item.className = "spec-item-3d";
 
-    vehiculo.datos.forEach(dato => {
-        const item = document.createElement("div");
-        item.className = "spec-item-3d";
-        
-        let alertaIcono = "";
-        if (dato.alerta) {
-            const fechaLimite = new Date(dato.valor);
-            const hoy = new Date();
-            alertaIcono = hoy > fechaLimite ? " 🚨" : " 🔔";
+                let alertaIcono = "";
+                if (dato.alerta) {
+                    const fechaLimite = new Date(dato.valor);
+                    const hoy = new Date();
+                    alertaIcono = hoy > fechaLimite ? ' <i data-lucide="alert-circle" style="color: var(--status-critical); display: inline-block; width: 14px; height: 14px; vertical-align: middle;"></i>' : ' <i data-lucide="bell" style="color: var(--status-warning); display: inline-block; width: 14px; height: 14px; vertical-align: middle;"></i>';
+                }
+
+                item.innerHTML = `
+                    <span class="label">${dato.nombre}${alertaIcono}</span>
+                    <span class="value">${formatearFechaAMostrar(dato.valor)}</span>
+                `;
+                listaSpecs.appendChild(item);
+            });
+        } else {
+            listaSpecs.innerHTML = `<p style="color: var(--text-secondary); font-size: 0.9rem; text-align: center; padding: 1rem 0;">No se han configurado fechas de control.</p>`;
         }
+    }
 
-        item.innerHTML = `
-            <span class="label">${dato.nombre}${alertaIcono}</span>
-            <span class="value">${formatearFechaAMostrar(dato.valor)}</span>
-        `;
-        listaSpecs.appendChild(item);
-    });
-
+    lucide.createIcons();
     navegarA("view-detail");
 }
 
 // ==========================================================================
-// FORMULARIO DE EDICIÓN Y CREACIÓN (#view-edit)
+// FORMULARIO DE EDICIÓN / REGISTRO (#view-form)
 // ==========================================================================
 function abrirEditorNuevo() {
-    appState.vehiculoSeleccionadoId = null; // Indica que es creación nueva
+    appState.equipoSeleccionadoId = null;
+
+    const elTitle = document.getElementById("modal-title");
+    const form = document.getElementById("equipment-form");
     
-    document.getElementById("edit-view-title").innerText = "Añadir Ficha";
-    document.getElementById("input-nombre").value = "";
-    document.getElementById("select-tipo").value = "Vehículo";
-    
+    if (elTitle) elTitle.innerText = "Añadir Equipo";
+    if (form) form.reset();
+
+    const elHiddenId = document.getElementById("item-id");
+    if (elHiddenId) elHiddenId.value = "";
+
     const contenedorCampos = document.getElementById("custom-fields-container");
-    contenedorCampos.innerHTML = "";
+    if (contenedorCampos) {
+        contenedorCampos.innerHTML = "";
+        // Campos de control por defecto de forma interactiva
+        agregarCampoDinamico("Última Revisión", "", false);
+        agregarCampoDinamico("Próxima ITV / Alerta", "", true);
+    }
 
-    // Añadir por defecto los dos campos sugeridos
-    agregarCampoDinamico("Última Revisión", "", false);
-    agregarCampoDinamico("Próxima ITV / Alerta", "", true);
-
-    navegarA("view-edit");
+    navegarA("view-form");
+    lucide.createIcons();
 }
 
 function abrirEditorExistente() {
-    const vehiculo = appState.vehiculos.find(v => v.id === appState.vehiculoSeleccionadoId);
-    if (!vehiculo) return;
+    const equipo = appState.equipos.find(e => e.id === appState.equipoSeleccionadoId);
+    if (!equipo) return;
 
-    document.getElementById("edit-view-title").innerText = "Editar Ficha";
-    document.getElementById("input-nombre").value = vehiculo.nombre;
-    document.getElementById("select-tipo").value = vehiculo.tipo;
+    const elTitle = document.getElementById("modal-title");
+    const elHiddenId = document.getElementById("item-id");
+    const elNombre = document.getElementById("item-name");
+    const elTipo = document.getElementById("item-type");
+    const elEstado = document.getElementById("item-status");
+
+    if (elTitle) elTitle.innerText = "Editar Equipo";
+    if (elHiddenId) elHiddenId.value = equipo.id;
+    if (elNombre) elNombre.value = equipo.nombre;
+    if (elTipo) elTipo.value = equipo.tipo;
+    if (elEstado) elEstado.value = equipo.estado;
 
     const contenedorCampos = document.getElementById("custom-fields-container");
-    contenedorCampos.innerHTML = "";
+    if (contenedorCampos) {
+        contenedorCampos.innerHTML = "";
+        if (Array.isArray(equipo.datos)) {
+            equipo.datos.forEach(dato => {
+                agregarCampoDinamico(dato.nombre, dato.valor, dato.alerta);
+            });
+        }
+    }
 
-    vehiculo.datos.forEach(dato => {
-        agregarCampoDinamico(dato.nombre, dato.valor, dato.alerta);
-    });
-
-    navegarA("view-edit");
+    navegarA("view-form");
+    lucide.createIcons();
 }
 
-// Añade una fila de datos a controlar con control inteligente de fechas
 function agregarCampoDinamico(nombre = "", valor = "", alerta = false) {
     const contenedor = document.getElementById("custom-fields-container");
     if (!contenedor) return;
@@ -296,8 +303,8 @@ function agregarCampoDinamico(nombre = "", valor = "", alerta = false) {
     row.id = rowId;
 
     row.innerHTML = `
-        <input type="text" placeholder="Concepto (ej: Seguro)" value="${nombre}" class="field-name">
-        <input type="date" value="${valor}" class="field-value">
+        <input type="text" placeholder="Concepto (ej: Seguro)" value="${nombre}" class="field-name" required>
+        <input type="date" value="${valor}" class="field-value" required>
         
         <div class="switch-container">
             <span>Alerta</span>
@@ -308,41 +315,38 @@ function agregarCampoDinamico(nombre = "", valor = "", alerta = false) {
         </div>
         
         <button type="button" class="btn-delete-field" onclick="eliminarFilaDinamica('${rowId}')">
-            🗑️
+            <i data-lucide="trash-2"></i>
         </button>
     `;
 
     contenedor.appendChild(row);
 
-    // ==========================================
-    // NUEVA LÓGICA INTELIGENTE DE CÁLCULO DE FECHAS
-    // ==========================================
+    // Automatización de fechas inteligente (Si cambias la última revisión, calcula la próxima a un año)
     const inputNombre = row.querySelector('.field-name');
     const inputFecha = row.querySelector('.field-value');
 
     if (inputFecha && inputNombre) {
         inputFecha.addEventListener('change', () => {
-            const nombreNormalizado = inputNombre.value.toLowerCase().trim();
-            const esUltimaRevision = nombreNormalizado.includes('última') || nombreNormalizado.includes('ultima');
+            const txt = inputNombre.value.toLowerCase().trim();
+            const esUltimaRevision = txt.includes('última') || txt.includes('ultima');
 
             if (esUltimaRevision && inputFecha.value) {
-                // 1. Calculamos la fecha sumando un año exacto
                 const fechaBase = new Date(inputFecha.value);
-                fechaBase.setFullYear(fechaBase.getFullYear() + 1);
+                fechaBase.setFullYear(fechaBase.getFullYear() + 1); // +1 Año
 
                 const aaaa = fechaBase.getFullYear();
                 const mm = String(fechaBase.getMonth() + 1).padStart(2, '0');
                 const dd = String(fechaBase.getDate()).padStart(2, '0');
                 const fechaCalculada = `${aaaa}-${mm}-${dd}`;
 
-                // 2. Buscamos si existe ya un campo "Próxima" para actualizarlo
                 actualizarOCrearProximaFecha(fechaCalculada);
             }
         });
     }
+
+    lucide.createIcons();
 }
 
-// Busca o añade el campo de Próxima revisión para asignarle la fecha calculada
 function actualizarOCrearProximaFecha(nuevaFecha) {
     const filas = document.querySelectorAll('.custom-field-row');
     let campoProximoEncontrado = null;
@@ -361,194 +365,200 @@ function actualizarOCrearProximaFecha(nuevaFecha) {
         const inputFecha = campoProximoEncontrado.querySelector('.field-value');
         const inputCheck = campoProximoEncontrado.querySelector('.field-alert');
         if (inputFecha) inputFecha.value = nuevaFecha;
-        if (inputCheck) inputCheck.checked = true; // Activa la alerta automáticamente para el evento futuro
+        if (inputCheck) inputCheck.checked = true; 
     } else {
-        // Si no existe un campo de próxima fecha, se lo creamos en el acto
         agregarCampoDinamico("Próxima ITV / Alerta", nuevaFecha, true);
     }
 }
 
-function eliminarFilaDinamica(id) {
+// Ventana de borrado de fila dinámica
+window.eliminarFilaDinamica = function(id) {
     const fila = document.getElementById(id);
     if (fila) fila.remove();
-}
+};
 
-// ==========================================================================
-// GUARDAR LOS CAMBIOS DEL FORMULARIO
-// ==========================================================================
-function guardarFormulario() {
-    const nombre = document.getElementById("input-nombre").value.trim();
-    const tipo = document.getElementById("select-tipo").value;
+// Guardar cambios mediante el Submit nativo del Form
+function procesarEnvioFormulario(e) {
+    e.preventDefault();
+
+    const elId = document.getElementById("item-id");
+    const elNombre = document.getElementById("item-name");
+    const elTipo = document.getElementById("item-type");
+    const elEstado = document.getElementById("item-status");
+
+    const id = elId ? elId.value : "";
+    const nombre = elNombre ? elNombre.value.trim() : "";
+    const tipo = elTipo ? elTipo.value : "vehiculo";
+    const estado = elEstado ? elEstado.value : "ok";
 
     if (!nombre) {
-        mostrarAlertaModal("Falta Información", "Por favor, escribe un nombre o identificador para continuar.", "danger");
+        mostrarAlertaModal("Falta Información", "El nombre es obligatorio.");
         return;
     }
 
-    // Procesar campos dinámicos
     const filas = document.querySelectorAll('.custom-field-row');
     const datosProcesados = [];
 
     filas.forEach(fila => {
-        const concepto = fila.querySelector('.field-name').value.trim();
-        const fechaVal = fila.querySelector('.field-value').value;
-        const alertaVal = fila.querySelector('.field-alert').checked;
+        const inputNombre = fila.querySelector('.field-name');
+        const inputFecha = fila.querySelector('.field-value');
+        const inputCheck = fila.querySelector('.field-alert');
 
-        if (concepto) {
+        if (inputNombre && inputFecha) {
             datosProcesados.push({
-                id: 'd_' + Math.random().toString(36).substr(2, 9),
-                nombre: concepto,
-                valor: fechaVal,
-                alerta: alertaVal
+                nombre: inputNombre.value.trim(),
+                valor: inputFecha.value,
+                alerta: inputCheck ? inputCheck.checked : false
             });
         }
     });
 
-    const emojiIcono = tipo === "Vehículo" ? "🚗" : tipo === "Herramienta" ? "🔧" : "📦";
-
-    if (appState.vehiculoSeleccionadoId) {
-        // Modo Edición: Actualizar registro existente
-        const index = appState.vehiculos.findIndex(v => v.id === appState.vehiculoSeleccionadoId);
+    if (id) {
+        // Edición de un equipo existente
+        const index = appState.equipos.findIndex(e => e.id === id);
         if (index !== -1) {
-            appState.vehiculos[index].nombre = nombre;
-            appState.vehiculos[index].tipo = tipo;
-            appState.vehiculos[index].icono = emojiIcono;
-            appState.vehiculos[index].datos = datosProcesados;
-            recalcularEstadoVehiculo(appState.vehiculos[index]);
+            appState.equipos[index].nombre = nombre;
+            appState.equipos[index].tipo = tipo;
+            appState.equipos[index].estado = estado;
+            appState.equipos[index].datos = datosProcesados;
         }
     } else {
-        // Modo Creación: Añadir nuevo registro
-        const nuevoVehiculo = {
-            id: 'v_' + Math.random().toString(36).substr(2, 9),
+        // Nuevo registro
+        const nuevoEquipo = {
+            id: 'eq_' + Math.random().toString(36).substr(2, 9),
             nombre: nombre,
             tipo: tipo,
-            icono: emojiIcono,
-            estado: "ok",
+            estado: estado,
             datos: datosProcesados
         };
-        recalcularEstadoVehiculo(nuevoVehiculo);
-        appState.vehiculos.push(nuevoVehiculo);
+        appState.equipos.push(nuevoEquipo);
+        appState.equipoSeleccionadoId = nuevoEquipo.id;
     }
 
     guardarEnLocalStorage();
     renderDashboard();
 
-    // Navegación limpia de vuelta
-    if (appState.vehiculoSeleccionadoId) {
-        verDetalleVehiculo(appState.vehiculoSeleccionadoId);
+    if (appState.equipoSeleccionadoId) {
+        verDetalleEquipo(appState.equipoSeleccionadoId);
     } else {
         navegarA("view-dashboard");
     }
 
-    mostrarAlertaModal("Guardado", "La ficha técnica se ha actualizado correctamente.", "success");
+    mostrarAlertaModal("Guardado", "El equipo ha sido actualizado con éxito.", "success");
 }
 
-// Eliminar el vehículo seleccionado completamente
-function eliminarVehiculoSeleccionado() {
+function eliminarEquipoSeleccionado() {
     mostrarConfirmacionModal(
-        "¿Eliminar Ficha?", 
-        "Esta acción no se puede deshacer. Se borrarán todos los históricos y alertas de este elemento.", 
+        "¿Eliminar Equipo?",
+        "Se borrará esta ficha de manera permanente junto a sus fechas de control. No se puede deshacer.",
         () => {
-            appState.vehiculos = appState.vehiculos.filter(v => v.id !== appState.vehiculoSeleccionadoId);
+            appState.equipos = appState.equipos.filter(e => e.id !== appState.equipoSeleccionadoId);
             guardarEnLocalStorage();
             renderDashboard();
             navegarA("view-dashboard");
-            mostrarAlertaModal("Eliminado", "La ficha ha sido borrada permanentemente.", "danger");
+            mostrarAlertaModal("Borrado", "El elemento ha sido eliminado.", "info");
         }
     );
 }
 
 // ==========================================================================
-// MODALES PREMIUM DE SISTEMA CON BLUR (CRISTAL ESMERILADO)
+// MODALES PREMIUM INTEGRADOS EN TU HTML
 // ==========================================================================
-function mostrarAlertaModal(titulo, mensaje, tipo = "info") {
-    const overlay = document.getElementById("alert-modal-overlay");
-    const contenedor = document.getElementById("alert-modal-container");
-    
-    if (!overlay || !contenedor) return;
+function mostrarAlertaModal(titulo, mensaje) {
+    const modal = document.getElementById("modal-alert");
+    const elTitulo = document.getElementById("sys-alert-title");
+    const elMensaje = document.getElementById("sys-alert-text");
 
-    const icono = tipo === "danger" ? "🚨" : tipo === "success" ? "✅" : "ℹ️";
-    const claseIcono = tipo === "danger" ? "danger-icon" : "";
-
-    contenedor.innerHTML = `
-        <div class="alert-3d-icon ${claseIcono}">${icono}</div>
-        <h3>${titulo}</h3>
-        <p>${mensaje}</p>
-        <button class="btn-alert-close" onclick="cerrarAlertaModal()">Entendido</button>
-    `;
-
-    overlay.classList.add("active");
+    if (modal && elTitulo && elMensaje) {
+        elTitulo.innerText = titulo;
+        elMensaje.innerText = mensaje;
+        modal.classList.add("active");
+    }
 }
 
-function cerrarAlertaModal() {
-    const overlay = document.getElementById("alert-modal-overlay");
-    if (overlay) overlay.classList.remove("active");
-}
+window.cerrarAlertaModal = function() {
+    const modal = document.getElementById("modal-alert");
+    if (modal) modal.classList.remove("active");
+};
 
 function mostrarConfirmacionModal(titulo, mensaje, callbackConfirmar) {
-    const overlay = document.getElementById("alert-modal-overlay");
-    const contenedor = document.getElementById("alert-modal-container");
-    
-    if (!overlay || !contenedor) return;
+    const modal = document.getElementById("modal-confirm");
+    const elMensaje = document.getElementById("sys-confirm-text");
 
-    contenedor.innerHTML = `
-        <div class="alert-3d-icon danger-icon">🗑️</div>
-        <h3>${titulo}</h3>
-        <p>${mensaje}</p>
-        <div class="alert-confirm-grid">
-            <button class="btn-confirm-cancel" onclick="cerrarAlertaModal()">Cancelar</button>
-            <button class="btn-confirm-danger" id="btn-modal-confirm-action">Eliminar</button>
-        </div>
-    `;
+    if (modal && elMensaje) {
+        elMensaje.innerText = mensaje;
+        modal.classList.add("active");
 
-    overlay.classList.add("active");
+        const btnOk = document.getElementById("btn-ok-confirm");
+        const btnCancel = document.getElementById("btn-cancel-confirm");
 
-    const btnConfirmar = document.getElementById("btn-modal-confirm-action");
-    if (btnConfirmar) {
-        btnConfirmar.addEventListener("click", () => {
-            cerrarAlertaModal();
-            callbackConfirmar();
-        });
+        if (btnOk) {
+            btnOk.onclick = () => {
+                modal.classList.remove("active");
+                callbackConfirmar();
+            };
+        }
+
+        if (btnCancel) {
+            btnCancel.onclick = () => {
+                modal.classList.remove("active");
+            };
+        }
     }
 }
 
 // ==========================================================================
-// MANEJADORES DE EVENTOS GLOBALES Y UTILIDADES
+// EVENTOS Y ENLACES FINALES
 // ==========================================================================
 function configurarEventosGlobales() {
-    // Botones "Atrás" o "Cancelar" genéricos
-    document.querySelectorAll(".btn-back, .btn-cancelar").forEach(btn => {
-        btn.addEventListener("click", volverAtras);
-    });
+    // Botón "Nuevo" del Dashboard
+    const btnNuevo = document.getElementById("btn-add-item");
+    if (btnNuevo) btnNuevo.onclick = abrirEditorNuevo;
 
-    // Añadir dinámicamente campos en el formulario
-    const btnAddOtro = document.getElementById("btn-add-other");
+    // Botones "Atrás" y "Cancelar"
+    const btnBackDetail = document.getElementById("btn-back-to-dashboard-from-detail");
+    if (btnBackDetail) btnBackDetail.onclick = volverAtras;
+
+    const btnBackForm = document.getElementById("btn-back-to-dashboard-from-form");
+    if (btnBackForm) btnBackForm.onclick = volverAtras;
+
+    // Botones de acción del Detalle (Editar y Eliminar)
+    const btnEditar = document.getElementById("btn-edit-detail");
+    if (btnEditar) btnEditar.onclick = abrirEditorExistente;
+
+    const btnEliminar = document.getElementById("btn-delete-detail");
+    if (btnEliminar) btnEliminar.onclick = eliminarEquipoSeleccionado;
+
+    // Botón dinámico dentro del formulario para añadir filas extras
+    const btnAddOtro = document.getElementById("btn-add-field");
     if (btnAddOtro) {
-        btnAddOtro.addEventListener("click", () => {
-            agregarCampoDinamico("", "", false);
+        btnAddOtro.onclick = () => agregarCampoDinamico("", "", false);
+    }
+
+    // Submit del Formulario
+    const formulario = document.getElementById("equipment-form");
+    if (formulario) {
+        formulario.onsubmit = procesarEnvioFormulario;
+    }
+
+    // Cerrar el modal de alertas
+    const btnCloseAlert = document.getElementById("btn-close-sys-alert");
+    if (btnCloseAlert) {
+        btnCloseAlert.onclick = cerrarAlertaModal;
+    }
+
+    // Filtros del Dashboard (Todos, Vehículos, Maquinaria)
+    const botonesFiltro = document.querySelectorAll(".filter-btn");
+    botonesFiltro.forEach(btn => {
+        btn.addEventListener("click", (e) => {
+            botonesFiltro.forEach(b => b.classList.remove("active"));
+            e.currentTarget.classList.add("active");
+            appState.filtroActivo = e.currentTarget.getAttribute("data-filter");
+            renderDashboard();
         });
-    }
-
-    // Botón de guardar cambios
-    const btnGuardar = document.getElementById("btn-save-form");
-    if (btnGuardar) {
-        btnGuardar.addEventListener("click", guardarFormulario);
-    }
-
-    // Botón para abrir el editor de un vehículo desde su Detalle
-    const btnEditar = document.getElementById("btn-edit-vehicle");
-    if (btnEditar) {
-        btnEditar.addEventListener("click", abrirEditorExistente);
-    }
-
-    // Botón para eliminar vehículo desde su Detalle
-    const btnEliminar = document.getElementById("btn-delete-vehicle");
-    if (btnEliminar) {
-        btnEliminar.addEventListener("click", eliminarVehiculoSeleccionado);
-    }
+    });
 }
 
-// Utilidad para formatear fechas de YYYY-MM-DD a DD/MM/YYYY en pantalla
 function formatearFechaAMostrar(fechaStr) {
     if (!fechaStr) return "Sin fecha";
     const partes = fechaStr.split("-");
