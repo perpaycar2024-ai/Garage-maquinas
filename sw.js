@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mantresi-v2';
+const CACHE_NAME = 'mantresi-v3';
 
 // Instalación limpia sin forzar archivos problemáticos en caché inicial
 self.addEventListener('install', event => {
