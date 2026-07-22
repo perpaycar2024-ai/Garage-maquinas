@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "io.github.perpaycar2024_ai.twa",
+        "sha256_cert_fingerprints": ["D8:E2:F1:D9:7A:EA:CE:F2:29:67:D5:61:AC:90:B9:59:4D:83:95:35:3F:B5:76:39:9C:72:97:86:A9:6D:B7:3A"]
+      }
+    }]
