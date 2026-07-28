@@ -471,9 +471,18 @@
                     <span style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 700; letter-spacing: 1px; text-transform: uppercase;">Mi Taller</span>
                     <h1>MANTRESI PREMIUM</h1>
                 </div>
-                <button class="btn-3d btn-3d-primary btn-circle" id="btn-add-item">
-                    <i data-lucide="plus"></i>
-                </button>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn-3d btn-3d-primary btn-circle" id="btn-backup" title="Exportar copia de seguridad">
+                        <i data-lucide="download"></i>
+                    </button>
+                    <button class="btn-3d btn-3d-primary btn-circle" id="btn-restore" title="Restaurar copia de seguridad">
+                        <i data-lucide="upload"></i>
+                    </button>
+                    <input type="file" id="input-restore-file" accept="application/json,.json" style="display: none;">
+                    <button class="btn-3d btn-3d-primary btn-circle" id="btn-add-item">
+                        <i data-lucide="plus"></i>
+                    </button>
+                </div>
             </header>
 
             <!-- Alertas Activas con Clase de Cristal Aplicada -->

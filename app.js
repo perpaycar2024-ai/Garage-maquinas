@@ -598,11 +598,110 @@ function mostrarConfirmacionModal(titulo, mensaje, callbackConfirmar) {
 }
 
 // ==========================================================================
+// BACKUP Y RESTAURACIÓN DE DATOS
+// ==========================================================================
+function exportarBackup() {
+    try {
+        const backup = {
+            app: "Mantresi Premium",
+            version: 1,
+            fecha: new Date().toISOString(),
+            equipos: appState.equipos
+        };
+
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+
+        const enlace = document.createElement("a");
+        enlace.href = url;
+        const hoy = new Date().toISOString().split("T")[0];
+        enlace.download = `mantresi_backup_${hoy}.json`;
+        document.body.appendChild(enlace);
+        enlace.click();
+        document.body.removeChild(enlace);
+
+        URL.revokeObjectURL(url);
+        mostrarAlertaModal("Copia Guardada", "El archivo de backup se ha descargado con éxito.");
+    } catch (error) {
+        console.error("Error al exportar backup:", error);
+        mostrarAlertaModal("Error", "No se ha podido generar la copia de seguridad.");
+    }
+}
+
+function solicitarArchivoRestauracion() {
+    const input = document.getElementById("input-restore-file");
+    if (input) {
+        input.value = ""; // Permite volver a elegir el mismo archivo si hace falta
+        input.click();
+    }
+}
+
+function procesarArchivoRestauracion(e) {
+    const archivo = e.target.files && e.target.files[0];
+    if (!archivo) return;
+
+    const lector = new FileReader();
+
+    lector.onload = (evento) => {
+        try {
+            const contenido = JSON.parse(evento.target.result);
+            // Admite tanto el formato nuevo ({equipos: [...]}) como un array suelto
+            const listaEquipos = Array.isArray(contenido) ? contenido : contenido.equipos;
+
+            if (!Array.isArray(listaEquipos)) {
+                throw new Error("Formato no reconocido");
+            }
+
+            // Misma normalización que se usa al cargar desde LocalStorage
+            const equiposValidados = listaEquipos.map(eq => {
+                return {
+                    id: eq.id || 'eq_' + Math.random().toString(36).substr(2, 9),
+                    nombre: eq.nombre || eq.name || 'Sin nombre',
+                    tipo: eq.tipo || eq.type || 'vehiculo',
+                    estado: eq.estado || eq.status || 'ok',
+                    notas: eq.notas || '',
+                    datos: Array.isArray(eq.datos) ? eq.datos : []
+                };
+            });
+
+            mostrarConfirmacionModal(
+                "¿Restaurar Copia?",
+                `Se sustituirán los ${appState.equipos.length} elementos actuales por los ${equiposValidados.length} del archivo. Esta acción no se puede deshacer.`,
+                () => {
+                    appState.equipos = equiposValidados;
+                    guardarEnLocalStorage();
+                    renderDashboard();
+                    mostrarAlertaModal("Restaurado", "La copia de seguridad se ha cargado con éxito.");
+                }
+            );
+        } catch (error) {
+            console.error("Error al leer el archivo de backup:", error);
+            mostrarAlertaModal("Archivo No Válido", "El archivo seleccionado no es una copia de seguridad válida.");
+        }
+    };
+
+    lector.onerror = () => {
+        mostrarAlertaModal("Error", "No se ha podido leer el archivo seleccionado.");
+    };
+
+    lector.readAsText(archivo);
+}
+
+// ==========================================================================
 // ENLACE DE EVENTOS
 // ==========================================================================
 function configurarEventosGlobales() {
     const btnNuevo = document.getElementById("btn-add-item");
     if (btnNuevo) btnNuevo.onclick = abrirEditorNuevo;
+
+    const btnBackup = document.getElementById("btn-backup");
+    if (btnBackup) btnBackup.onclick = exportarBackup;
+
+    const btnRestore = document.getElementById("btn-restore");
+    if (btnRestore) btnRestore.onclick = solicitarArchivoRestauracion;
+
+    const inputRestore = document.getElementById("input-restore-file");
+    if (inputRestore) inputRestore.addEventListener("change", procesarArchivoRestauracion);
 
     const btnBackDetail = document.getElementById("btn-back-to-dashboard-from-detail");
     if (btnBackDetail) {
