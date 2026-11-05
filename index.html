@@ -115,6 +115,14 @@
             font-weight: 700;
         }
 
+        .hint {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            margin: -0.4rem 0 0.8rem;
+            line-height: 1.35;
+        }
+
         /* BOTONES 3D INTEGRADOS */
         .btn-3d {
             display: inline-flex;
@@ -131,6 +139,7 @@
             color: #fff;
             text-shadow: 0 1px 2px rgba(0,0,0,0.4);
         }
+        a.btn-3d { text-decoration: none; }
 
         /* Botón Principal Integrado Oscuro */
         .btn-3d-primary { 
@@ -161,6 +170,7 @@
             height: 42px;
             border-radius: 50%;
             padding: 0;
+            flex-shrink: 0;
         }
 
         .w-full { width: 100%; }
@@ -181,6 +191,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 8px;
             cursor: pointer;
             transition: transform 0.2s ease, border-color 0.2s ease;
         }
@@ -198,11 +209,15 @@
             display: flex;
             align-items: center;
             gap: 12px;
+            min-width: 0;
+            flex: 1;
         }
+        .card-title-block > div:last-child { min-width: 0; }
 
         .avatar-wrapper-3d {
             width: 44px;
             height: 44px;
+            flex-shrink: 0;
             background: rgba(255,255,255,0.03);
             border: 1px solid var(--border-color);
             border-radius: 12px;
@@ -216,11 +231,18 @@
             font-size: 1rem;
             font-weight: 600;
             margin-bottom: 2px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .card-title-block .subtitle {
+            display: block;
             font-size: 0.8rem;
             color: var(--text-secondary);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         /* Badges de estado modernos */
@@ -230,10 +252,28 @@
             padding: 4px 10px;
             border-radius: 20px;
             text-transform: uppercase;
+            white-space: nowrap;
         }
         .status-badge-3d.ok { background: rgba(16,185,129,0.15); color: #34d399; }
         .status-badge-3d.revision { background: rgba(245,158,11,0.15); color: #fbbf24; }
         .status-badge-3d.taller { background: rgba(239,68,68,0.15); color: #f87171; }
+
+        /* Resumen superior del dashboard */
+        .summary-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+        .summary-chip {
+            flex: 1;
+            border-radius: 14px;
+            padding: 0.7rem 0.3rem;
+            text-align: center;
+            border: 1px solid var(--border-color);
+            background: rgba(255,255,255,0.03);
+        }
+        .summary-chip b { display: block; font-size: 1.5rem; font-weight: 800; line-height: 1.1; }
+        .summary-chip span { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-secondary); font-weight: 700; }
+        .summary-chip.crit b { color: #f87171; }
+        .summary-chip.warn b { color: #fbbf24; }
+        .summary-chip.good b { color: #34d399; }
+        .more-alerts { text-align: center; font-size: 0.8rem; color: var(--text-secondary); padding-top: 0.2rem; }
 
         /* Alertas individuales translúcidas dentro de la caja de cristal */
         .alert-item-3d {
@@ -253,6 +293,7 @@
         .alert-3d-avatar {
             width: 36px;
             height: 36px;
+            flex-shrink: 0;
             border-radius: 10px;
             display: flex;
             align-items: center;
@@ -261,6 +302,7 @@
         .critical .alert-3d-avatar { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
         .warning .alert-3d-avatar { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
 
+        .alert-item-3d .info { min-width: 0; }
         .alert-item-3d .info h4 { font-size: 0.9rem; font-weight: 600; margin-bottom: 1px; }
         .alert-item-3d .info p { font-size: 0.78rem; color: var(--text-secondary); }
 
@@ -293,17 +335,148 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         }
 
-        /* Elementos del detalle de ficha */
-        .spec-item-3d {
+        /* ---------- FICHA: km y llamada rápida ---------- */
+        .quick-row {
             display: flex;
-            justify-content: space-between;
+            flex-wrap: wrap;
+            justify-content: center;
             align-items: center;
-            padding: 0.9rem 0;
-            border-bottom: 1px solid var(--border-color);
+            gap: 10px;
+            margin-top: 1.1rem;
         }
-        .spec-item-3d:last-child { border-bottom: none; }
-        .spec-item-3d .label { font-size: 0.9rem; color: var(--text-secondary); }
-        .spec-item-3d .value { font-size: 0.95rem; font-weight: 600; }
+        .quick-row:empty { display: none; }
+        .km-box {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 6px;
+            background: var(--bg-input);
+            border: 1px dashed rgba(255,255,255,0.18);
+            border-radius: 14px;
+            padding: 0.45rem 0.9rem;
+        }
+        .km-box input {
+            width: 120px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: #fff;
+            font-size: 1.35rem;
+            font-weight: 800;
+            text-align: right;
+            font-family: inherit;
+        }
+        .km-box span { color: var(--text-secondary); font-size: 0.85rem; font-weight: 700; }
+
+        /* ---------- FICHA: filas de datos editables ---------- */
+        .spec-row { padding: 0.85rem 0; border-bottom: 1px solid var(--border-color); }
+        .spec-row:last-child { border-bottom: none; }
+        .spec-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+        .spec-name { font-size: 0.9rem; color: var(--text-secondary); min-width: 0; }
+        .spec-input {
+            background: transparent;
+            border: 1px dashed rgba(255,255,255,0.12);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 0.4rem 0.55rem;
+            text-align: right;
+            outline: none;
+            width: 150px;
+            max-width: 55%;
+            font-family: inherit;
+            color-scheme: dark;
+        }
+        .spec-input:focus { background: var(--bg-input); border-color: rgba(56,189,248,0.5); }
+        .spec-status { font-size: 0.76rem; font-weight: 700; margin-top: 0.35rem; }
+        .spec-status.taller { color: #f87171; }
+        .spec-status.revision { color: #fbbf24; }
+        .spec-status.ok { color: #34d399; }
+        .spec-status.vacio { color: var(--text-secondary); font-weight: 600; }
+        .spec-sub { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 0.5rem; }
+        .spec-repeat { font-size: 0.74rem; color: var(--text-secondary); display: flex; align-items: center; gap: 6px; }
+        .spec-repeat select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            border-radius: 8px;
+            padding: 0.3rem 0.4rem;
+            font-size: 0.78rem;
+            outline: none;
+            font-family: inherit;
+        }
+        .spec-repeat select option { background: #151d30; color: #fff; }
+        .btn-done {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #164e63;
+            border: 1px solid rgba(255,255,255,0.06);
+            box-shadow: 0 3px 0 #083344;
+            color: #fff;
+            border-radius: 10px;
+            padding: 0.45rem 0.8rem;
+            font-size: 0.8rem;
+            font-weight: 700;
+            cursor: pointer;
+            font-family: inherit;
+        }
+        .btn-done:active { transform: translateY(2px); box-shadow: 0 1px 0 #083344; }
+        .empty-note { color: var(--text-secondary); font-size: 0.88rem; opacity: 0.75; line-height: 1.4; }
+
+        /* ---------- RECUADRO DESTACADO DEL HISTORIAL ---------- */
+        .history-panel {
+            border: 1px solid rgba(56,189,248,0.38);
+            background: linear-gradient(160deg, rgba(56,189,248,0.12), var(--bg-card) 55%);
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3), 0 0 22px rgba(56,189,248,0.07);
+        }
+        .history-panel .panel-title { color: #7dd3fc; }
+        .hist-add { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.2rem; }
+        .hist-add-row { display: flex; gap: 8px; align-items: center; }
+        .hist-add-row input[type="date"] { flex: 1; min-width: 0; }
+        .hist-add-row input[type="number"] { width: 100px; flex-shrink: 0; }
+        .inline-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.7rem;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            font-family: inherit;
+            color-scheme: dark;
+        }
+        .inline-input:focus { border-color: rgba(56,189,248,0.5); }
+        textarea.inline-input { resize: vertical; line-height: 1.4; }
+
+        .hist-list { border-left: 2px solid rgba(56,189,248,0.28); padding-left: 14px; margin-left: 4px; }
+        .hist-item { position: relative; padding: 0 0 1rem 10px; }
+        .hist-item:last-child { padding-bottom: 0.2rem; }
+        .hist-item::before {
+            content: "";
+            position: absolute;
+            left: -20px;
+            top: 0.3rem;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #38bdf8;
+            box-shadow: 0 0 0 3px rgba(56,189,248,0.2);
+        }
+        .hist-meta { display: flex; align-items: center; justify-content: space-between; font-size: 0.74rem; color: #7dd3fc; font-weight: 700; }
+        .hist-text {
+            font-size: 0.92rem;
+            line-height: 1.35;
+            outline: none;
+            word-break: break-word;
+            white-space: pre-wrap;
+            border-radius: 6px;
+            padding: 2px 4px;
+            margin: 2px 0 0 -4px;
+        }
+        .hist-text:focus { background: var(--bg-input); }
+        .hist-empty { color: var(--text-secondary); font-size: 0.85rem; opacity: 0.8; line-height: 1.4; border-left: none; }
 
         /* Formulario y Filas dinámicas */
         .form-card {
@@ -340,6 +513,24 @@
             outline: none;
         }
 
+        /* Chips de plantillas */
+        .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            border-radius: 20px;
+            padding: 0.5rem 0.9rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-family: inherit;
+        }
+        .chip.active { background: #164e63; border-color: rgba(56,189,248,0.45); }
+
         /* Filas de campos optimizadas contra desajustes de pantalla móvil */
         .custom-field-row {
             display: flex;
@@ -360,6 +551,7 @@
             color: #fff;
             font-size: 0.85rem;
             outline: none;
+            color-scheme: dark;
         }
         .custom-field-row .field-name { flex: 1.2; min-width: 0; }
         .custom-field-row .field-value { flex: 1.1; min-width: 0; }
@@ -415,6 +607,7 @@
             display: flex;
             align-items: center;
         }
+        .hist-meta .btn-delete-field { color: var(--text-secondary); padding: 2px; }
 
         /* Pie de página con acciones fijas */
         .app-footer-actions {
@@ -426,6 +619,34 @@
             padding: 1rem 1.2rem;
             border-top: 1px solid var(--border-color);
             display: flex;
+        }
+
+        /* Toast con "Deshacer" */
+        .toast {
+            display: none;
+            position: fixed;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%);
+            background: #1e293b;
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 0.7rem 1rem;
+            align-items: center;
+            gap: 14px;
+            z-index: 998;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            font-size: 0.88rem;
+            max-width: 92%;
+        }
+        .toast button {
+            background: none;
+            border: none;
+            color: #38bdf8;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 0.88rem;
+            font-family: inherit;
         }
 
         /* Modales Premium */
@@ -479,15 +700,15 @@
                         <i data-lucide="upload"></i>
                     </button>
                     <input type="file" id="input-restore-file" accept="application/json,.json" style="display: none;">
-                    <button class="btn-3d btn-3d-primary btn-circle" id="btn-add-item">
+                    <button class="btn-3d btn-3d-primary btn-circle" id="btn-add-item" title="Añadir equipo">
                         <i data-lucide="plus"></i>
                     </button>
                 </div>
             </header>
 
-            <!-- Alertas Activas con Clase de Cristal Aplicada -->
+            <!-- Lo que toca: resumen + alertas ordenadas por urgencia -->
             <div class="premium-card-panel glass-panel">
-                <div class="panel-title"><i data-lucide="bell"></i> Recordatorios y Alertas</div>
+                <div class="panel-title"><i data-lucide="bell"></i> Lo que toca</div>
                 <div id="alerts-container">
                     <!-- Inyectado por JS -->
                 </div>
@@ -500,7 +721,7 @@
                 <button class="filter-btn" data-filter="maquinaria">Máquinas</button>
             </div>
 
-            <!-- Grid de Inventario -->
+            <!-- Grid de Inventario (lo más urgente arriba) -->
             <div class="inventory-grid" id="inventory-grid">
                 <!-- Inyectado por JS -->
             </div>
@@ -508,7 +729,7 @@
 
 
         <!-- ==================================================================
-             PÁGINA 2: VISTA DETALLE DE FICHA (#view-detail)
+             PÁGINA 2: FICHA (#view-detail) — todo se edita aquí directamente
              ================================================================== -->
         <section id="view-detail" class="app-view">
             <header class="app-header">
@@ -519,31 +740,59 @@
                 <div style="width: 42px;"></div>
             </header>
 
-            <div class="premium-card-panel" style="text-align: center; padding: 2rem 1rem;">
+            <!-- Cabecera: nombre, estado, km actuales y llamada al taller -->
+            <div class="premium-card-panel" style="text-align: center; padding: 1.6rem 1rem 1.3rem;">
                 <div class="avatar-wrapper-3d" id="detail-type-icon" style="width: 60px; height: 60px; margin: 0 auto 1rem; border-radius: 18px;">
                     <!-- Icono JS -->
                 </div>
                 <h2 id="detail-title" style="font-size: 1.4rem; margin-bottom: 0.5rem; font-weight: 800;">Nombre del Equipo</h2>
                 <span id="detail-status-badge" class="status-badge-3d ok">Operativo</span>
+                <div class="quick-row" id="detail-quick"></div>
             </div>
 
+            <!-- Datos de control -->
             <div class="premium-card-panel">
-                <div class="panel-title"><i data-lucide="sliders"></i> Datos de Control e Historial</div>
+                <div class="panel-title"><i data-lucide="sliders"></i> Plazos y controles</div>
+                <p class="hint">Toca cualquier dato para cambiarlo. "Hecho hoy" apunta la intervención y recalcula el siguiente plazo.</p>
                 <div id="detail-specs-list">
                     <!-- Inyectado por JS -->
                 </div>
             </div>
 
+            <!-- HISTORIAL: recuadro destacado y separado de los datos -->
+            <div class="premium-card-panel history-panel">
+                <div class="panel-title"><i data-lucide="history"></i> Historial de intervenciones</div>
+                <div class="hist-add">
+                    <input type="text" id="hist-text" class="inline-input" placeholder="¿Qué has hecho? (ej: cambio de aceite y filtro)" maxlength="200">
+                    <div class="hist-add-row">
+                        <input type="date" id="hist-date" class="inline-input">
+                        <input type="number" id="hist-km" class="inline-input" inputmode="numeric" placeholder="km" min="0">
+                        <button type="button" class="btn-3d btn-3d-success btn-circle" id="btn-hist-add" title="Anotar en el historial">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="hist-list" class="hist-list">
+                    <!-- Inyectado por JS -->
+                </div>
+            </div>
+
+            <!-- Notas libres -->
+            <div class="premium-card-panel">
+                <div class="panel-title"><i data-lucide="sticky-note"></i> Notas</div>
+                <textarea id="detail-notes" class="inline-input" rows="3" placeholder="Apuntes sueltos: dónde está la llave, qué aceite lleva, el teléfono del que lo arregla..."></textarea>
+            </div>
+
             <footer class="app-footer-actions">
                 <button class="btn-3d btn-3d-primary w-full" id="btn-edit-detail">
-                    <i data-lucide="edit-3"></i> Editar Ficha
+                    <i data-lucide="edit-3"></i> Editar nombre, plazos y tipo
                 </button>
             </footer>
         </section>
 
 
         <!-- ==================================================================
-             PÁGINA 3: FORMULARIO ALTA / EDICIÓN (#view-form)
+             PÁGINA 3: FORMULARIO ALTA / ESTRUCTURA (#view-form)
              ================================================================== -->
         <section id="view-form" class="app-view">
             <header class="app-header">
@@ -556,6 +805,12 @@
 
             <form id="equipment-form">
                 <input type="hidden" id="item-id">
+
+                <!-- Plantillas rápidas (solo al crear) -->
+                <div class="form-card" id="template-wrap" style="display: none;">
+                    <div class="panel-title"><i data-lucide="list-checks"></i> Empezar con plantilla</div>
+                    <div class="chip-row" id="template-chips"></div>
+                </div>
 
                 <div class="form-card">
                     <div class="form-group">
@@ -579,32 +834,36 @@
                             <option value="taller">En Taller / Averiado</option>
                         </select>
                     </div>
+
+                    <div class="form-group">
+                        <label>Teléfono taller / proveedor (opcional)</label>
+                        <input type="tel" id="item-phone" placeholder="Ej: 962 40 00 00">
+                    </div>
                 </div>
 
                 <!-- Bloque de Campos Personalizados con Fechas de Control -->
                 <div class="form-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <span class="panel-title" style="margin-bottom: 0;"><i data-lucide="calendar-clock"></i> Plazos y Controles</span>
-                        <!-- Botón Añadir modificado al estilo 3D Premium Oscuro integrado -->
                         <button type="button" class="btn-3d btn-3d-primary" id="btn-add-field" style="padding: 0.5rem 0.9rem; font-size: 0.8rem; border-radius: 10px; box-shadow: 0 3px 0 #0f172a;">
                             + Añadir Campo
                         </button>
                     </div>
+                    <p class="hint">Si el nombre lleva "km" el campo es por kilómetros; si es una revisión, ITV, seguro, cambio... será una fecha.</p>
                     
                     <div id="custom-fields-container">
                         <!-- Filas dinámicas inyectadas por JS -->
                     </div>
                 </div>
 
-                <!-- Campo de Notas Largo -->
+                <!-- Campo de Notas -->
                 <div class="form-card">
                     <div class="form-group">
-                        <label><i data-lucide="sticky-note"></i> Notas / Diario de Mantenimiento</label>
+                        <label><i data-lucide="sticky-note"></i> Notas</label>
                         <textarea id="item-notes" rows="4" placeholder="Ej: Cambiado filtro de aire a los 15.000km..." style="width: 100%; background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 12px; color: #fff; padding: 12px; font-family: inherit; resize: vertical; outline: none;"></textarea>
                     </div>
                 </div>
 
-                <!-- Footer equilibrado con relieves 3D integrados sin colores planos chillones -->
                 <footer class="app-footer-actions" style="gap: 12px;">
                     <button type="button" class="btn-3d btn-3d-danger" id="btn-delete-detail" style="padding: 0 1.2rem; display: none;">
                         <i data-lucide="trash-2"></i>
@@ -640,7 +899,7 @@
     
     <meta name="theme-color" content="#0d1321">
 
-    <!-- Script de lógica de negocio existente -->
+    <!-- Script de lógica de negocio -->
     <script src="app.js"></script>
 
     <!-- Registro del Service Worker para soporte offline e instalación -->
