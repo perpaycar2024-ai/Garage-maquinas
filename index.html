@@ -58,6 +58,7 @@
             display: none;
             flex-direction: column;
             flex: 1;
+            min-width: 0;
             padding: 1rem;
             padding-bottom: 5.5rem;
         }
@@ -179,11 +180,12 @@
         /* Tarjetas de Inventario */
         .inventory-grid {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: minmax(0, 1fr);
             gap: 1rem;
         }
 
         .premium-item-card {
+            min-width: 0;
             background: var(--bg-card);
             border: 1px solid var(--border-color);
             border-radius: 16px;
@@ -231,9 +233,8 @@
             font-size: 1rem;
             font-weight: 600;
             margin-bottom: 2px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            overflow-wrap: anywhere;
+            line-height: 1.25;
         }
 
         .card-title-block .subtitle {
@@ -253,6 +254,7 @@
             border-radius: 20px;
             text-transform: uppercase;
             white-space: nowrap;
+            flex-shrink: 0;
         }
         .status-badge-3d.ok { background: rgba(16,185,129,0.15); color: #34d399; }
         .status-badge-3d.revision { background: rgba(245,158,11,0.15); color: #fbbf24; }
