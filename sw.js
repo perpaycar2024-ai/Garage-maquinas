@@ -1,4 +1,4 @@
-const CACHE_NAME = 'mantresi-v5';
+const CACHE_NAME = 'mantresi-v6';
 
 self.addEventListener('install', event => {
   self.skipWaiting();
